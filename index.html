@@ -41,7 +41,7 @@ header{position:sticky;top:0;z-index:30;background:var(--verde);
   color:var(--laton);border:1px solid var(--laton);border-radius:4px;padding:2px 6px;white-space:nowrap}
 .dias{display:flex;gap:6px;margin:11px 0 0;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
 .dias::-webkit-scrollbar{display:none}
-.dia{flex:none;padding:6px 12px;border-radius:99px;font-size:14.5px;font-weight:600;background:transparent;
+.dia{flex:1 0 auto;padding:7px 14px;border-radius:99px;font-size:14.5px;font-weight:600;background:transparent;
   color:var(--cal);border:1px solid var(--verde-linea);white-space:nowrap;text-align:left;line-height:1.25}
 .dia b{display:block;font-size:14.5px}
 .dia i{display:block;font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:.06em;opacity:.75}
@@ -56,12 +56,6 @@ main{padding:14px 16px calc(84px + var(--safe-b));min-height:60vh}
 h2.sec{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--cal);margin:20px 0 8px;font-weight:600}
 h2.sec:first-child{margin-top:2px}
-
-.cinta{background:var(--verde);border:1px solid var(--verde-linea);border-radius:var(--r);
-  padding:10px 13px;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.cinta .sede{font-size:16px;font-weight:700;letter-spacing:-.01em}
-.cinta .cuando{font-family:var(--mono);font-size:12.5px;color:var(--cal);letter-spacing:.05em;margin-top:2px}
-.cinta .salida{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--laton);white-space:nowrap}
 
 .hoyo-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--tarjeta);
   color:var(--tinta);border-radius:var(--r);padding:12px 10px;margin-bottom:10px}
@@ -587,14 +581,6 @@ function claseNota(g,par){
   const d=g-par;
   return d<=-2?'eagle':d===-1?'birdie':d===1?'bogey':d>=2?'doble':'';
 }
-function cinta(d){
-  const c=S.campos[d];
-  return `<div class="cinta">
-    <div><div class="sede">${esc(c.nombre)}</div>
-    <div class="cuando">${esc(c.fecha)} · ${esc(c.sede)}</div></div>
-    <div class="salida">${esc(c.salidas[S.grupoActivo]||c.salidas[0])}</div></div>`;
-}
-
 /* ---------- Captura ---------- */
 function vistaHoy(){
   const d=S.diaActivo, c=S.campos[d], h=S.hoyoActivo;
@@ -602,7 +588,7 @@ function vistaHoy(){
   let hechos=0;
   S.grupos[d].forEach(g=>g.forEach(jid=>{ for(let i=0;i<HOYOS;i++) if(scoreDe(d,jid,i)!==null) hechos++; }));
 
-  let html=cinta(d)+`
+  let html=`
     <div class="segm">
       <button class="${S.grupoActivo===0?'on':''}" onclick="setGrupo(0)">Grupo 1 · ${esc(c.salidas[0])}</button>
       <button class="${S.grupoActivo===1?'on':''}" onclick="setGrupo(1)">Grupo 2 · ${esc(c.salidas[1])}</button>
@@ -729,7 +715,7 @@ function vistaTarjeta(){
     <p class="nota-txt">Par neto = 2, birdie = 3, eagle = 4, bogey = 1, peor = 0.
     El número junto a cada nombre son sus golpes de ventaja; la fila de arriba es el índice
     de dificultad de cada hoyo, que decide en cuáles los recibe.</p>`;
-  $('v-tarjeta').innerHTML=cinta(d)+`
+  $('v-tarjeta').innerHTML=`
     <div class="scroll-x"><table class="card">
       <thead><tr>${th}</tr></thead>
       <tbody><tr class="par">${fp}</tr>${filas}</tbody>
@@ -945,7 +931,7 @@ function vistaPresiones(){
   const d=S.diaActivo, c=S.campos[d];
   const miGrupo=S.grupos[d].find(g=>g.includes('j0'))||S.grupos[d][0];
   const rivales=miGrupo.filter(id=>id!=='j0');
-  if(!rivales.length){ $('v-presiones').innerHTML=cinta(d)+'<p class="vacio-msg">No hay rivales en tu grupo.</p>'+seccionSliding(); return; }
+  if(!rivales.length){ $('v-presiones').innerHTML='<p class="vacio-msg">No hay rivales en tu grupo.</p>'+seccionSliding(); return; }
   if(!rivales.includes(presRival)) presRival=rivales[0];
   const m=presionesMatch(d,'j0',presRival);
   const sg=v=>v>0?'+'+v:(v<0?''+v:'0');
@@ -1006,7 +992,7 @@ function vistaPresiones(){
   const segm=rivales.map(id=>`<button class="${presRival===id?'on':''}" onclick="setRival('${id}')">${esc(corto(jug(id).nombre))}</button>`).join('');
   const veredicto = dinero===0 ? 'Tablas con '+esc(nomR)
     : (dinero>0 ? 'Te debe '+dinero+' '+esc(nomR) : 'Le debes '+Math.abs(dinero)+' a '+esc(nomR));
-  $('v-presiones').innerHTML=cinta(d)+`
+  $('v-presiones').innerHTML=`
     <div class="segm">${segm}</div>
     <div class="scroll-x"><table class="card">
       <thead><tr>${th}</tr></thead>
@@ -1289,7 +1275,7 @@ let leyendo=false, errorIA='';
 function vistaFoto(){
   const d=S.diaActivo, c=S.campos[d];
   const grupo=S.grupos[d][S.grupoActivo];
-  let html=cinta(d)+`
+  let html=`
     <div class="segm">
       <button class="${S.grupoActivo===0?'on':''}" onclick="setGrupo(0)">Grupo 1</button>
       <button class="${S.grupoActivo===1?'on':''}" onclick="setGrupo(1)">Grupo 2</button>
