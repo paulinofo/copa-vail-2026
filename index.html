@@ -288,7 +288,7 @@ table.card.sl-tabla input.aba{color:var(--bandera);border-color:var(--bandera)}
 .cuenta.total span:last-child{font-size:17px}
 .cuenta span.arr{color:var(--ok)} .cuenta span.aba{color:var(--bandera)}
 table.card.pres td{font-family:var(--mono);font-size:12.5px;font-weight:700}
-table.card.pres td.nom{font-family:inherit;font-size:13.5px;font-weight:600;min-width:112px}
+table.card.pres td.nom{font-family:inherit;font-size:13.5px;font-weight:600;min-width:100px}
 table.card.pres td.vacia{background:var(--tarjeta-linea);opacity:.25}
 table.card.pres td.arr{color:var(--ok)}
 table.card.pres td.aba{color:var(--bandera)}
@@ -915,7 +915,18 @@ function cuentaPresiones(){
   }
   return {porRival,porDia,gran};
 }
-function setRival(j){ presRival=j; render(); }
+function setRival(j){ presRival=j; presScrollX=0; render(); }
+/* Las dos cuadrículas de Presiones se desplazan juntas, y la posición
+   sobrevive al re-render (cada golpe capturado vuelve a pintar la vista). */
+let presScrollX=0;
+function ligaScrollPresiones(){
+  const els=[...document.querySelectorAll('#v-presiones .scroll-x')];
+  els.forEach(el=>{
+    el.scrollLeft=presScrollX;
+    el.onscroll=()=>{ presScrollX=el.scrollLeft;
+      els.forEach(o=>{ if(o!==el && Math.abs(o.scrollLeft-presScrollX)>1) o.scrollLeft=presScrollX; }); };
+  });
+}
 function vistaPresiones(){
   const d=S.diaActivo, c=S.campos[d];
   const miGrupo=S.grupos[d].find(g=>g.includes('j0'))||S.grupos[d][0];
@@ -1023,6 +1034,7 @@ function vistaPresiones(){
     Esto es el juego de tu foursome, aparte del <b>Paco's Invitacional</b>, que se lleva en stableford neto
     entre los ocho y va en la pestaña Tabla.</p>
     ${seccionSliding()}`;
+  ligaScrollPresiones();
 }
 function setSlidingMio(d,rid,v){ setSliding(d,'j0',rid, -(parseInt(v,10)||0)); }
 function agregaJugadorALista(jid){ S.lista.unshift({n:jug(jid).nombre,v:0,nota:''}); guardar(); render(); }
