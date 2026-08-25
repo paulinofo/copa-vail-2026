@@ -698,8 +698,10 @@ function vistaTarjeta(){
   for(let h=9;h<18;h++) fp+=`<td>${c.par[h]}</td>`; fp+=`<td>${inn}</td><td>${out+inn}</td>`;
   let filas='', filasPts='';
   ids.forEach(jid=>{
-    const j=jug(jid); let f=`<td class="nom">${esc(corto(j.nombre))}</td>`; let so=0,si_=0;
-    const ch=hcpCampo(j,c);
+    const j=jug(jid); const ch=hcpCampo(j,c); let so=0,si_=0;
+    /* ch invisible: iguala el ancho de la columna de nombres entre las dos
+       cuadrículas, para que los hoyos queden alineados al moverse juntas */
+    let f=`<td class="nom">${esc(corto(j.nombre))}<span class="ch" style="visibility:hidden">${ch}</span></td>`;
     let fq=`<td class="nom">${esc(corto(j.nombre))}<span class="ch">${ch}</span></td>`, po=0, pi=0;
     for(let h=0;h<9;h++){ const g=scoreDe(d,jid,h); if(g!==null) so+=g;
       f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}</td>`;
@@ -735,6 +737,18 @@ function vistaTarjeta(){
     <button class="btn" onclick="compartirDia()">Mandar este día por WhatsApp</button>
     <p class="nota-txt">Desliza la tabla para ver la segunda vuelta; los números en rojo son bajo par.
     Manda tu día al grupo para que todos tengan el torneo completo.</p>`;
+  ligaScrollTarjeta();
+}
+/* Las dos cuadrículas de la Tarjeta (golpes y puntos) se desplazan juntas,
+   igual que en Presiones; la posición sobrevive al re-render. */
+let tarjScrollX=0;
+function ligaScrollTarjeta(){
+  const els=[...document.querySelectorAll('#v-tarjeta .scroll-x')];
+  els.forEach(el=>{
+    el.scrollLeft=tarjScrollX;
+    el.onscroll=()=>{ tarjScrollX=el.scrollLeft;
+      els.forEach(o=>{ if(o!==el && Math.abs(o.scrollLeft-tarjScrollX)>1) o.scrollLeft=tarjScrollX; }); };
+  });
 }
 
 /* ---------- Posiciones ---------- */
