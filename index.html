@@ -337,7 +337,6 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
   <section class="vista" id="v-tarjeta"></section>
   <section class="vista" id="v-pos"></section>
   <section class="vista" id="v-presiones"></section>
-  <section class="vista" id="v-sliding"></section>
   <section class="vista" id="v-grupos"></section>
   <section class="vista" id="v-ajustes"></section>
 </main>
@@ -438,6 +437,7 @@ function cargar(){
   if(SYNC_URL_EMBEBIDA && !S.sync.url){ S.sync.url=SYNC_URL_EMBEBIDA; S.sync.activo=true; }
   if(!S.grupos) S.grupos=gruposFijando(S.torneo.esquema);
   sembrar();
+  if(S.vista==='sliding') S.vista='presiones';
   if(S.idxSem!==2){
     const prevIdx={ j1:12 };           // defaults viejos ya corregidos (Paco 12 -> 26)
     S.jugadores.forEach(j=>{ const v=INDICES_2026[j.id]; if(v===undefined) return;
@@ -920,7 +920,7 @@ function vistaPresiones(){
   const d=S.diaActivo, c=S.campos[d];
   const miGrupo=S.grupos[d].find(g=>g.includes('j0'))||S.grupos[d][0];
   const rivales=miGrupo.filter(id=>id!=='j0');
-  if(!rivales.length){ $('v-presiones').innerHTML=cinta(d)+'<p class="vacio-msg">No hay rivales en tu grupo.</p>'; return; }
+  if(!rivales.length){ $('v-presiones').innerHTML=cinta(d)+'<p class="vacio-msg">No hay rivales en tu grupo.</p>'+seccionSliding(); return; }
   if(!rivales.includes(presRival)) presRival=rivales[0];
   const m=presionesMatch(d,'j0',presRival);
   const sg=v=>v>0?'+'+v:(v<0?''+v:'0');
@@ -1021,11 +1021,13 @@ function vistaPresiones(){
     vuelta ${VALOR_VUELTA}; hay ${BONO_MAYORIA} extra para quien junte más presiones entre las dos vueltas,
     y la presión que termina empatada se lava.<br><br>
     Esto es el juego de tu foursome, aparte del <b>Paco's Invitacional</b>, que se lleva en stableford neto
-    entre los ocho y va en la pestaña Tabla.</p>`;
+    entre los ocho y va en la pestaña Tabla.</p>
+    ${seccionSliding()}`;
 }
 function setSlidingMio(d,rid,v){ setSliding(d,'j0',rid, -(parseInt(v,10)||0)); }
 function agregaJugadorALista(jid){ S.lista.unshift({n:jug(jid).nombre,v:0,nota:''}); guardar(); render(); }
-function vistaSliding(){
+let slidingAbierto=false;
+function seccionSliding(){
   const enTorneo=new Map();          // indice en la lista -> id del jugador del Vail
   S.jugadores.forEach(j=>{ const i=idxLista(j.nombre); if(i>=0 && !enTorneo.has(i)) enTorneo.set(i,j.id); });
 
@@ -1061,9 +1063,11 @@ function vistaSliding(){
       <button class="btn sec" onclick="aplicaListaAlDia(${d})">Aplicar</button></div>`;
   }
 
-  $('v-sliding').innerHTML=`
-    <h2 class="sec" style="margin-top:14px">Golf Sliding</h2>
-    <p class="nota-txt" style="margin:0 0 10px">Negativo da golpes, positivo los recibe. Entre dos jugadores
+  return `
+    <details class="campo-editor" style="margin-top:14px" ${slidingAbierto?'open':''}
+      ontoggle="slidingAbierto=this.open">
+    <summary>Golf Sliding <span style="font-family:var(--mono);font-size:12px;color:var(--cal);font-weight:400">la lista y los golpes por día</span></summary>
+    <p class="nota-txt" style="margin:8px 0 10px">Negativo da golpes, positivo los recibe. Entre dos jugadores
     se dan los golpes de la diferencia — por ejemplo −12 contra +3 son 15 golpes.</p>
     <div class="ls-gt">En el Vail</div>${arriba}${faltan}
     <div class="ls-gt">Resto de la lista</div>${resto}
@@ -1071,7 +1075,7 @@ function vistaSliding(){
     <h2 class="sec">Llevar la lista a cada día</h2>
     <p class="nota-txt" style="margin:0 0 8px">Al aplicarla, los golpes de la diferencia entran en las presiones
     de ese día. Si jugaron parejos, no la apliques.</p>
-    ${aplicar}`;
+    ${aplicar}</details>`;
 }
 function vistaGrupos(){
   const fs=S.grupos.flatMap(dia=>dia.map(g=>g.slice().sort().join(',')));
@@ -1685,7 +1689,6 @@ const VISTAS=[
   {id:'presiones',et:'Presiones',svg:'<path d="M4 19h16"/><path d="M7 19V9"/><path d="M12 19V5"/><path d="M17 19v-6"/><circle cx="12" cy="5" r="1.6"/>'},
   {id:'grupos',et:'Grupos',svg:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M15 19c0-2 2-3.5 4-3.5s2.5 1 2.5 2.5"/>'},
   {id:'foto',et:'Foto',svg:'<path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/>'},
-  {id:'sliding',et:'Sliding',svg:'<path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.2"/><circle cx="15" cy="12" r="2.2"/><circle cx="7" cy="17" r="2.2"/>'},
   {id:'ajustes',et:'Ajustes',svg:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'}
 ];
 function pintarNav(){
@@ -1702,7 +1705,7 @@ function render(){
     `<button class="dia ${S.diaActivo===d?'on':''}" onclick="setDia(${d})">
       <b>${esc(c.nombre)}</b><i>${esc(c.fecha)} · ${esc(c.salidas[0])}</i></button>`).join('');
   VISTAS.forEach(v=>$('v-'+v.id).classList.toggle('on',S.vista===v.id));
-  ({hoy:vistaHoy,foto:vistaFoto,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,sliding:vistaSliding,grupos:vistaGrupos,ajustes:vistaAjustes})[S.vista]();
+  ({hoy:vistaHoy,foto:vistaFoto,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,grupos:vistaGrupos,ajustes:vistaAjustes})[S.vista]();
   pintarNav();
   pintarSync();
 }
