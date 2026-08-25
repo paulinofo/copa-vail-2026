@@ -337,7 +337,6 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
   <section class="vista" id="v-tarjeta"></section>
   <section class="vista" id="v-pos"></section>
   <section class="vista" id="v-presiones"></section>
-  <section class="vista" id="v-grupos"></section>
   <section class="vista" id="v-ajustes"></section>
 </main>
 
@@ -438,6 +437,7 @@ function cargar(){
   if(!S.grupos) S.grupos=gruposFijando(S.torneo.esquema);
   sembrar();
   if(S.vista==='sliding') S.vista='presiones';
+  if(S.vista==='grupos') S.vista='ajustes';
   if(S.idxSem!==2){
     const prevIdx={ j1:12 };           // defaults viejos ya corregidos (Paco 12 -> 26)
     S.jugadores.forEach(j=>{ const v=INDICES_2026[j.id]; if(v===undefined) return;
@@ -1077,39 +1077,35 @@ function seccionSliding(){
     de ese día. Si jugaron parejos, no la apliques.</p>
     ${aplicar}</details>`;
 }
-function vistaGrupos(){
+function seccionGrupos(){
+  const d=S.diaActivo, c=S.campos[d];
   const fs=S.grupos.flatMap(dia=>dia.map(g=>g.slice().sort().join(',')));
   const repes=fs.length-new Set(fs).size;
-  let html = repes===0
-    ? `<div class="sello">✓ Ningún foursome se repite en los 4 días</div>`
-    : `<div class="sello mal">⚠ ${repes} foursome${repes>1?'s':''} repetido${repes>1?'s':''}</div>`;
-  const conteo={};
-  S.grupos.forEach(dia=>dia.forEach(g=>combinaciones(g,2).forEach(([a,b])=>{
-    const k=[a,b].sort().join('|'); conteo[k]=(conteo[k]||0)+1; })));
-  S.grupos.forEach((dia,d)=>{
-    const c=S.campos[d];
-    html+=`<h2 class="sec">${esc(c.fecha)} · ${esc(c.nombre)}</h2>`;
-    dia.forEach((g,gi)=>{
-      html+=`<div class="grupo"><h3>Grupo ${gi+1} <span>${esc(c.salidas[gi])}</span></h3><ol>`;
-      g.forEach((jid,i)=>{ const j=jug(jid);
-        const marcado = selGrupo && selGrupo.d===d && selGrupo.gi===gi && selGrupo.i===i;
-        html+=`<li class="${marcado?'sel':''}" onclick="tocaJugador(${d},${gi},${i})">${esc(j.nombre)}<span>índice ${esc(j.indice)}</span></li>`; });
-      html+=`</ol></div>`;
-    });
+  let html=`<h2 class="sec">Grupos · ${esc(c.fecha)} · ${esc(c.nombre)}</h2>`;
+  S.grupos[d].forEach((g,gi)=>{
+    html+=`<div class="grupo"><h3>Grupo ${gi+1} <span>${esc(c.salidas[gi])}</span></h3><ol>`;
+    g.forEach((jid,i)=>{ const j=jug(jid);
+      const marcado = selGrupo && selGrupo.d===d && selGrupo.gi===gi && selGrupo.i===i;
+      html+=`<li class="${marcado?'sel':''}" onclick="tocaJugador(${d},${gi},${i})">${esc(j.nombre)}<span>índice ${esc(j.indice)}</span></li>`; });
+    html+=`</ol></div>`;
   });
-  const vals=Object.values(conteo), sinCoincidir=28-vals.length;
-  html+=`<div class="segm" style="margin-top:14px">
-      <button class="${S.torneo.esquema==='convivencia'?'on':''}" onclick="setEsquema('convivencia')">Convivencia</button>
-      <button class="${S.torneo.esquema==='equilibrio'?'on':''}" onclick="setEsquema('equilibrio')">Equilibrio</button>
-    </div>
-    <p class="nota-txt"><b>Convivencia:</b> todos juegan con todos al menos una vez; algunas parejas coinciden 3 veces.<br>
-    <b>Equilibrio:</b> nadie coincide más de 2 veces; 4 parejas no llegan a jugar juntas.<br>
-    Ahora: ${sinCoincidir} parejas sin coincidir, máximo ${vals.length?Math.max(...vals):0} coincidencias.</p>
+  html+=`${repes===0
+      ? '<div class="sello">✓ Ningún foursome se repite en los 4 días</div>'
+      : '<div class="sello mal">⚠ '+repes+' foursome'+(repes>1?'s':'')+' repetido'+(repes>1?'s':'')+'</div>'}
     <p class="nota-txt">${selGrupo
       ? '<b>'+esc(jug(S.grupos[selGrupo.d][selGrupo.gi][selGrupo.i]).nombre)+' seleccionado.</b> Toca a otro del mismo día para intercambiarlos, o tócalo de nuevo para soltarlo.'
-      : 'Para cambiar los grupos a mano: toca un jugador y luego a otro del mismo día; se intercambian de lugar.'}</p>
-    <button class="btn sec" onclick="rehacerGrupos()">Volver a sortear los grupos</button>`;
-  $('v-grupos').innerHTML=html;
+      : 'Los grupos son los del día elegido arriba. Para cambiarlos a mano: toca un jugador y luego a otro; se intercambian.'}</p>
+    <details class="campo-editor">
+      <summary>Cambiar el calendario <span style="font-family:var(--mono);font-size:12px;color:var(--cal);font-weight:400">esquema y sorteo</span></summary>
+      <div class="segm" style="margin-top:10px">
+        <button class="${S.torneo.esquema==='convivencia'?'on':''}" onclick="setEsquema('convivencia')">Convivencia</button>
+        <button class="${S.torneo.esquema==='equilibrio'?'on':''}" onclick="setEsquema('equilibrio')">Equilibrio</button>
+      </div>
+      <p class="nota-txt"><b>Convivencia:</b> todos con todos al menos una vez. <b>Equilibrio:</b> nadie más de 2 veces.
+      Cambiar esto, o volver a sortear, rehace los días que faltan SOLO en este teléfono — no lo toques ya arrancado el torneo.</p>
+      <button class="btn sec" onclick="rehacerGrupos()">Volver a sortear los grupos</button>
+    </details>`;
+  return html;
 }
 function setEsquema(e){ selGrupo=null; S.torneo.esquema=e; S.grupos=gruposFijando(e); guardar(); render(); }
 function rehacerGrupos(){
@@ -1192,6 +1188,7 @@ function vistaAjustes(){
       Si tu iPhone no deja adjuntarlo desde aquí, va el instructivo y tú adjuntas el archivo
       en el mismo mensaje.</p>
   `;
+  html+=seccionGrupos();
   html+=`<h2 class="sec">Compartir y unir scores</h2>
     ${msgUnir?'<div class="ok-msg">'+esc(msgUnir)+'</div>':''}
     ${errUnir?'<div class="err">'+esc(errUnir)+'</div>':''}
@@ -1687,7 +1684,6 @@ const VISTAS=[
   {id:'tarjeta',et:'Tarjeta',svg:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'},
   {id:'pos',et:'Tabla',svg:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
   {id:'presiones',et:'Presiones',svg:'<path d="M4 19h16"/><path d="M7 19V9"/><path d="M12 19V5"/><path d="M17 19v-6"/><circle cx="12" cy="5" r="1.6"/>'},
-  {id:'grupos',et:'Grupos',svg:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M15 19c0-2 2-3.5 4-3.5s2.5 1 2.5 2.5"/>'},
   {id:'foto',et:'Foto',svg:'<path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/>'},
   {id:'ajustes',et:'Ajustes',svg:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'}
 ];
@@ -1705,7 +1701,7 @@ function render(){
     `<button class="dia ${S.diaActivo===d?'on':''}" onclick="setDia(${d})">
       <b>${esc(c.nombre)}</b><i>${esc(c.fecha)} · ${esc(c.salidas[0])}</i></button>`).join('');
   VISTAS.forEach(v=>$('v-'+v.id).classList.toggle('on',S.vista===v.id));
-  ({hoy:vistaHoy,foto:vistaFoto,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,grupos:vistaGrupos,ajustes:vistaAjustes})[S.vista]();
+  ({hoy:vistaHoy,foto:vistaFoto,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,ajustes:vistaAjustes})[S.vista]();
   pintarNav();
   pintarSync();
 }
