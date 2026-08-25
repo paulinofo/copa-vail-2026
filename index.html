@@ -646,10 +646,9 @@ function vistaHoy(){
         return esc(corto(jug(rid).nombre))+' '+(v===null?'?':(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos'))); }).join(' · ');
       const falta=rivs.some(rid=>slidingLista('j0',rid)===null);
       tee1=`<div class="tee1">
-        <div class="tee1-txt">${yaHay?'Golpes pactados para hoy.':'Salen parejos. ¿Aplicas el sliding?'}
+        <div class="tee1-txt">${yaHay?'Golpes pactados para hoy.':'Salen parejos.'}
           <span>${esc(prev)}</span>${falta?'<span class="aviso">falta alguien en la lista</span>':''}</div>
         <div class="tee1-bt">
-          <button class="btn ${yaHay?'sec':''}" onclick="aplicaListaAlDia(${d})">Aplicar sliding</button>
           <button class="btn sec" onclick="dejarParejos(${d})">Parejos</button>
         </div></div>`;
     }
