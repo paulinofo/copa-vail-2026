@@ -395,6 +395,7 @@ function cargar(){
   if(!S.pend) S.pend=[]; if(!S.ct) S.ct={};
   if(SYNC_URL_EMBEBIDA && !S.sync.url){ S.sync.url=SYNC_URL_EMBEBIDA; S.sync.activo=true; }
   if(!S.grupos) S.grupos=gruposFijando(S.torneo.esquema);
+  sembrar();
   // Al abrir, salta al día que corresponde a la fecha de hoy
   const d=new Date();                       // fecha LOCAL, no UTC
   const hoy=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')
@@ -1517,6 +1518,39 @@ function decodificar(txt){
     out[jid]=cad.slice(0,HOYOS).split('').map(c=>{ const i=CH.indexOf(c); return i<=0?null:i; });
   });
   return Object.keys(out).length? {dia:+m[1],scores:out} : null;
+}
+
+/* ------------------------------------------------------------
+   SEMILLA: rondas ya jugadas que viajan dentro del archivo, para
+   que quien abra la app por primera vez llegue con el torneo al
+   corriente sin pegar códigos a mano. Se aplica una sola vez por
+   código y jamás pisa un golpe ya capturado. Va marcada con la
+   fecha de la ronda, no con la de hoy, para que cualquier
+   corrección posterior le gane al sincronizar.
+   ------------------------------------------------------------ */
+const SEMILLAS = [
+  'PI26.0.j0:654757567378697457,j1:685769778666556355,j2:427434494454365565,j3:645746566367555436,j4:745664776377668347,j5:645736675356585458,j6:656634686556686567,j7:755534575466656566'
+];
+const SEMILLA_TS = Date.UTC(2026,7,25);      // cierre del lun 24 ago
+function sembrar(){
+  if(!Array.isArray(S.semillas)) S.semillas=[];
+  let puestos=0;
+  SEMILLAS.forEach((cod,i)=>{
+    if(S.semillas.indexOf(i)>=0) return;
+    const dec=decodificar(cod);
+    if(!dec) return;
+    Object.entries(dec.scores).forEach(([jid,arr])=>{
+      if(!jug(jid)) return;
+      arr.forEach((v,h)=>{
+        if(v===null) return;
+        if(scoreDe(dec.dia,jid,h)!==null) return;   // respeta lo capturado
+        fijarScore(dec.dia,jid,h,v,SEMILLA_TS); puestos++;
+      });
+    });
+    S.semillas.push(i);
+  });
+  if(puestos) guardar();
+  return puestos;
 }
 
 let msgUnir='', errUnir='';
