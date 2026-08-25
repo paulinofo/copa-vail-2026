@@ -190,6 +190,31 @@ textarea.codigo:focus{outline:2px solid var(--laton);outline-offset:1px}
 .err{background:#FDF0EC;border:1px solid #E2C6BD;border-left:3px solid var(--bandera);border-radius:8px;
   padding:11px 13px;font-size:14.5px;color:#8F2C1A;margin-bottom:10px}
 
+
+/* ---- portada de arranque: 2 s y se desvanece sola ---- */
+#portada{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:0;background:
+  radial-gradient(120% 90% at 50% 30%, #1A4A36 0%, var(--verde) 46%, var(--verde-hondo) 100%);
+  animation:portada-fuera .5s ease 2s forwards;pointer-events:none}
+#portada .p-marca{width:92px;height:92px;margin-bottom:26px;opacity:0;
+  animation:portada-sube .7s cubic-bezier(.2,.7,.3,1) .05s forwards}
+#portada .p-sobre{font-family:var(--mono);font-size:12px;letter-spacing:.42em;text-indent:.42em;
+  color:var(--laton);text-transform:uppercase;margin-bottom:14px;opacity:0;
+  animation:portada-sube .7s ease .25s forwards}
+#portada h1{margin:0;font-size:44px;line-height:1.04;font-weight:800;letter-spacing:-.02em;
+  color:var(--tarjeta);text-align:center;text-transform:uppercase;opacity:0;
+  animation:portada-sube .7s cubic-bezier(.2,.7,.3,1) .15s forwards}
+#portada .p-anio{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--laton);
+  letter-spacing:.34em;text-indent:.34em;margin-top:10px;opacity:0;
+  animation:portada-sube .7s ease .3s forwards}
+#portada .p-raya{width:54px;height:1px;background:var(--laton);opacity:0;margin:22px 0 14px;
+  animation:portada-raya .6s ease .45s forwards}
+#portada .p-pie{font-family:var(--mono);font-size:12.5px;letter-spacing:.24em;text-indent:.24em;
+  color:var(--cal);text-transform:uppercase;opacity:0;animation:portada-sube .7s ease .5s forwards}
+@keyframes portada-sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes portada-raya{from{opacity:0;transform:scaleX(0)}to{opacity:.9;transform:none}}
+@keyframes portada-fuera{to{opacity:0;visibility:hidden}}
+
 nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--verde);
   border-top:1px solid var(--verde-linea);display:flex;padding-bottom:var(--safe-b)}
 nav button{flex:1;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -282,6 +307,20 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
 </style>
 </head>
 <body>
+<div id="portada" aria-hidden="true">
+  <svg class="p-marca" viewBox="0 0 96 96" fill="none">
+    <ellipse cx="48" cy="78" rx="34" ry="9" fill="#20503C"/>
+    <ellipse cx="42" cy="79" rx="7.5" ry="2.6" fill="#0C231A"/>
+    <rect x="40.5" y="18" width="3" height="61" rx="1.5" fill="#F4EFE3"/>
+    <path d="M43.5 20 L78 30 L43.5 40 Z" fill="#C9A227"/>
+    <circle cx="60" cy="72" r="5.5" fill="#F4EFE3"/>
+  </svg>
+  <div class="p-sobre">Vail · Colorado</div>
+  <h1>Paco&rsquo;s<br>Invitacional</h1>
+  <div class="p-anio">2026</div>
+  <div class="p-raya"></div>
+  <div class="p-pie">24 &ndash; 29 de agosto</div>
+</div>
 
 <header>
   <div class="marca">
@@ -1660,6 +1699,7 @@ function render(){
 }
 
 cargar();
+setTimeout(()=>{ const p=document.getElementById('portada'); p&&p.remove(); }, 2700);
 render();
 if(sincronizando()) cicloSync();
 setInterval(()=>cicloSync(), 15000);
