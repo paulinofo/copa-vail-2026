@@ -223,6 +223,10 @@ textarea.codigo:focus{outline:2px solid var(--laton);outline-offset:1px}
   letter-spacing:.08em;text-align:center;line-height:1.5}
 #quien .btn{max-width:340px;width:100%;margin-top:8px}
 
+#zoomReset{position:fixed;right:12px;bottom:calc(84px + var(--safe-b));z-index:60;display:none;
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:var(--verde-hondo);
+  background:var(--laton);border-radius:99px;padding:9px 14px;font-weight:700;
+  box-shadow:0 3px 10px rgba(0,0,0,.35)}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--verde);
   border-top:1px solid var(--verde-linea);display:flex;padding-bottom:var(--safe-b)}
 nav button{flex:1;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -352,6 +356,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
   <section class="vista" id="v-ajustes"></section>
 </main>
 
+<button id="zoomReset" onclick="zoomOriginal()">⤾ tamaño normal</button>
 <nav id="nav"></nav>
 
 <script>
@@ -366,7 +371,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 16:55';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 16:58';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -2014,6 +2019,23 @@ function render(){
   pintarNav();
   pintarEstado();
 }
+
+/* ============================================================
+   5b. ZOOM DE PELLIZCO
+   El visor bloquea el zoom nativo, así que la app trae el suyo:
+   pellizca con dos dedos para acercar (hasta 2.5×) y el botón
+   flotante regresa al tamaño original.
+   ============================================================ */
+let zoomBase=1, zoomActual=1;
+function aplicaZoom(z){
+  zoomActual=Math.max(1,Math.min(2.5,z));
+  document.body.style.zoom=(zoomActual===1)?'':String(zoomActual);
+  const b=$('zoomReset'); if(b) b.style.display=zoomActual>1?'':'none';
+}
+function zoomOriginal(){ aplicaZoom(1); }
+window.addEventListener('gesturestart',e=>{ e.preventDefault(); zoomBase=zoomActual; },{passive:false});
+window.addEventListener('gesturechange',e=>{ e.preventDefault(); aplicaZoom(zoomBase*e.scale); },{passive:false});
+window.addEventListener('gestureend',e=>{ e.preventDefault(); },{passive:false});
 
 cargar();
 setTimeout(()=>{ const p=document.getElementById('portada'); p&&p.remove(); }, 2700);
