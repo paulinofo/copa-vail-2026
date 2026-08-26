@@ -365,7 +365,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 16:40';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 16:46';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1131,14 +1131,6 @@ function vistaPresiones(){
         <div class="cuenta total"><span>${q.gran<0?'Vas pagando':(q.gran>0?'Vas cobrando':'Vas a mano')}</span>
           <span>${q.gran===0?'—':Math.abs(q.gran)}</span></div>
         <div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}</div>`; })()}
-    <p class="nota-txt">Cada renglón es una presión, con su marcador hoyo por hoyo desde que nace.
-    En <b>verde</b> vas arriba, en <b>rojo</b> abajo, y el hoyo donde nace una presión va en dorado.
-    Al llegar una apuesta a 2 abajo se abre otra sola; ninguna se cierra, todas corren hasta el 9 o el 18.
-    La vuelta reusa el mismo renglón que la ida. Cada presión de la ida vale ${VALOR_IDA} y cada una de la
-    vuelta ${VALOR_VUELTA}; hay ${BONO_MAYORIA} extra para quien junte más presiones entre las dos vueltas,
-    y la presión que termina empatada se lava.<br><br>
-    Esto es el juego de tu foursome, aparte del <b>Paco's Invitacional</b>, que se lleva en stableford neto
-    entre los ocho y va en la pestaña Tabla.</p>
     ${seccionSliding()}`;
   ligaScrollPresiones();
 }
