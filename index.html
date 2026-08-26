@@ -208,6 +208,8 @@ textarea.codigo:focus{outline:2px solid var(--laton);outline-offset:1px}
 #portada .p-jug{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.18em;text-indent:.18em;
   color:var(--tarjeta);text-transform:uppercase;margin-top:12px;opacity:0;
   animation:portada-sube .7s ease .6s forwards}
+#portada .p-ver{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-indent:.14em;
+  color:var(--cal);margin-top:18px;opacity:0;animation:portada-sube .7s ease .75s forwards}
 @keyframes portada-sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes portada-raya{from{opacity:0;transform:scaleX(0)}to{opacity:.9;transform:none}}
 @keyframes portada-fuera{to{opacity:0;visibility:hidden}}
@@ -328,6 +330,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
   <div class="p-raya"></div>
   <div class="p-pie">24 &ndash; 29 de agosto</div>
   <div class="p-jug" id="p-jugador"></div>
+  <div class="p-ver" id="p-version"></div>
 </div>
 
 <header>
@@ -362,6 +365,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
+const ACTUALIZADA='v6 · 26 ago 2026 · 16:21';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -554,6 +558,8 @@ function setYo(id){
 function pintarPortadaNombre(){
   const el=document.getElementById('p-jugador');
   if(el&&S.yo&&jug(S.yo)) el.textContent=jug(S.yo).nombre;
+  const pv=document.getElementById('p-version');
+  if(pv) pv.textContent=ACTUALIZADA;
 }
 function mostrarQuien(){
   if(document.getElementById('quien')) return;
@@ -1324,7 +1330,8 @@ function vistaAjustes(){
     <button class="btn sec" onclick="$('archivo').click()">Restaurar desde respaldo</button>
     <input type="file" id="archivo" accept=".json" style="display:none" onchange="importar(this)">
     <button class="btn peligro" onclick="borrarTodo()">Borrar todos los scores</button>
-    <p class="nota-txt">Los datos se guardan en este iPhone. Descarga un respaldo si vas a cambiar de teléfono.</p>`;
+    <p class="nota-txt">Los datos se guardan en este iPhone. Descarga un respaldo si vas a cambiar de teléfono.</p>
+    <p class="nota-txt" style="text-align:center;font-family:var(--mono);letter-spacing:.08em">${esc(ACTUALIZADA)}</p>`;
   $('v-ajustes').innerHTML=html;
 }
 function gridHoyos(d,k){
