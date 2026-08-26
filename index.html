@@ -667,14 +667,19 @@ function vistaHoy(){
       ${filasPH}</div>${tee1}`;
   }
   html+=`<div class="barra-prog"><i style="width:${(hechos/(8*HOYOS)*100).toFixed(1)}%"></i></div>
-    <p class="nota-txt">${hechos} de 144 golpes capturados. Toca el guion para anotar el par y ajusta con − o +.</p>`;
+    <p class="nota-txt">${hechos} de 144 golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
+    y toca el número para borrar el hoyo.</p>`;
   if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
 }
 function setGrupo(i){ S.grupoActivo=i; borrador=null; guardar(); render(); }
 function mueveHoyo(n){ S.hoyoActivo=Math.max(0,Math.min(HOYOS-1,S.hoyoActivo+n)); guardar(); render(); }
 function ponPar(jid){ const d=S.diaActivo,h=S.hoyoActivo;
-  if(scoreDe(d,jid,h)===null){ fijarScore(d,jid,h,S.campos[d].par[h]); render(); } }
+  const g=scoreDe(d,jid,h);
+  if(g===null) fijarScore(d,jid,h,S.campos[d].par[h]);   // toque en el guion: anota el par
+  else fijarScore(d,jid,h,null);                          // toque en el número: lo borra
+  render();
+}
 function cambiaGolpe(jid,n){
   const d=S.diaActivo,h=S.hoyoActivo,a=scoreDe(d,jid,h);
   if(a===null) fijarScore(d,jid,h,S.campos[d].par[h]);
