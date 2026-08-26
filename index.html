@@ -205,9 +205,21 @@ textarea.codigo:focus{outline:2px solid var(--laton);outline-offset:1px}
   animation:portada-raya .6s ease .45s forwards}
 #portada .p-pie{font-family:var(--mono);font-size:12.5px;letter-spacing:.24em;text-indent:.24em;
   color:var(--cal);text-transform:uppercase;opacity:0;animation:portada-sube .7s ease .5s forwards}
+#portada .p-jug{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.18em;text-indent:.18em;
+  color:var(--tarjeta);text-transform:uppercase;margin-top:12px;opacity:0;
+  animation:portada-sube .7s ease .6s forwards}
 @keyframes portada-sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes portada-raya{from{opacity:0;transform:scaleX(0)}to{opacity:.9;transform:none}}
 @keyframes portada-fuera{to{opacity:0;visibility:hidden}}
+
+/* ---- primera vez: elegir quién eres ---- */
+#quien{position:fixed;inset:0;z-index:90;background:var(--verde-hondo);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+#quien h2{margin:0 0 4px;font-size:26px;font-weight:800;color:var(--tarjeta);
+  text-transform:uppercase;letter-spacing:-.01em}
+#quien p{margin:0 0 16px;font-family:var(--mono);font-size:12.5px;color:var(--cal);
+  letter-spacing:.08em;text-align:center;line-height:1.5}
+#quien .btn{max-width:340px;width:100%;margin-top:8px}
 
 nav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:var(--verde);
   border-top:1px solid var(--verde-linea);display:flex;padding-bottom:var(--safe-b)}
@@ -315,6 +327,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
   <div class="p-anio">2026</div>
   <div class="p-raya"></div>
   <div class="p-pie">24 &ndash; 29 de agosto</div>
+  <div class="p-jug" id="p-jugador"></div>
 </div>
 
 <header>
@@ -527,6 +540,28 @@ function revolver(arr){
    ============================================================ */
 const jug = id => S.jugadores.find(j=>j.id===id);
 const parTotal = c => c.par.reduce((a,b)=>a+b,0);
+
+/* Identidad de ESTE teléfono: pinta la portada con su nombre y centra las
+   presiones en él. Se elige la primera vez y se cambia en Ajustes; vive solo
+   en el teléfono (no viaja en la sincronización). */
+const YO=()=>S.yo||'j0';
+function setYo(id){
+  if(!jug(id)) return;
+  S.yo=id; guardar();
+  const q=document.getElementById('quien'); q&&q.remove();
+  pintarPortadaNombre(); render();
+}
+function pintarPortadaNombre(){
+  const el=document.getElementById('p-jugador');
+  if(el&&S.yo&&jug(S.yo)) el.textContent=jug(S.yo).nombre;
+}
+function mostrarQuien(){
+  if(document.getElementById('quien')) return;
+  const div=document.createElement('div'); div.id='quien';
+  div.innerHTML='<h2>¿Quién eres?</h2><p>Para tu pantalla de inicio y tus presiones<br>en este teléfono</p>'
+    +S.jugadores.map(j=>'<button class="btn sec" onclick="setYo(\''+j.id+'\')">'+esc(j.nombre)+'</button>').join('');
+  document.body.appendChild(div);
+}
 function hcpCampo(j,c){
   if(!S.torneo.usarHcp) return 0;
   return Math.round(parseFloat(j.indice)||0);   // un solo indice para los cuatro campos
@@ -634,13 +669,14 @@ function vistaHoy(){
     </div>`;
   });
 
-  /* ---- presiones en vivo, sólo si estás en este grupo ---- */
-  if(grupo.includes('j0')){
+  /* ---- presiones en vivo, sólo si tu jugador va en este grupo ---- */
+  const MI=YO();
+  if(grupo.includes(MI)){
     const nueveFin = h<9?8:17, etNueve = h<9?'la ida':'la vuelta';
     const sg=v=>v>0?'+'+v:(v<0?''+v:'0');
     let filasPH='';
-    grupo.filter(id=>id!=='j0').forEach(rid=>{
-      const m=presionesMatch(d,'j0',rid,h);
+    grupo.filter(id=>id!==MI).forEach(rid=>{
+      const m=presionesMatch(d,MI,rid,h);
       const vivas=m.apuestas.filter(a=>a.fin===nueveFin && a.ini<=h);
       const marc=vivas.length
         ? vivas.map(a=>`<i class="${a.st>0?'arr':(a.st<0?'aba':'')}">${sg(a.st)}</i>`).join('')
@@ -651,11 +687,11 @@ function vistaHoy(){
     /* en el tee del 1: pactar los golpes del día */
     let tee1='';
     if(h===0){
-      const rivs=grupo.filter(id=>id!=='j0');
-      const yaHay=rivs.some(rid=>slidingDe(d,'j0',rid)!==0);
-      const prev=rivs.map(rid=>{ const v=slidingLista('j0',rid);
+      const rivs=grupo.filter(id=>id!==MI);
+      const yaHay=rivs.some(rid=>slidingDe(d,MI,rid)!==0);
+      const prev=rivs.map(rid=>{ const v=slidingLista(MI,rid);
         return esc(corto(jug(rid).nombre))+' '+(v===null?'?':(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos'))); }).join(' · ');
-      const falta=rivs.some(rid=>slidingLista('j0',rid)===null);
+      const falta=rivs.some(rid=>slidingLista(MI,rid)===null);
       tee1=`<div class="tee1">
         <div class="tee1-txt">${yaHay?'Golpes pactados para hoy.':'Salen parejos.'}
           <span>${esc(prev)}</span>${falta?'<span class="aviso">falta alguien en la lista</span>':''}</div>
@@ -852,12 +888,14 @@ function setLista(i,campo,val){
 function agregaLista(){ S.lista.push({n:'',v:0,nota:''}); guardar(); render(); }
 function borraLista(i){ S.lista.splice(i,1); guardar(); render(); }
 function dejarParejos(d){
-  const g=(S.grupos[d]||[]).find(x=>x.includes('j0')); if(!g) return;
-  g.filter(id=>id!=='j0').forEach(rid=>setSliding(d,'j0',rid,0));
+  const mi=YO();
+  const g=(S.grupos[d]||[]).find(x=>x.includes(mi)); if(!g) return;
+  g.filter(id=>id!==mi).forEach(rid=>setSliding(d,mi,rid,0));
 }
 function aplicaListaAlDia(d){
-  const g=(S.grupos[d]||[]).find(x=>x.includes('j0')); if(!g) return;
-  g.filter(id=>id!=='j0').forEach(rid=>{ const v=slidingLista('j0',rid); if(v!==null) setSliding(d,'j0',rid,v); });
+  const mi=YO();
+  const g=(S.grupos[d]||[]).find(x=>x.includes(mi)); if(!g) return;
+  g.filter(id=>id!==mi).forEach(rid=>{ const v=slidingLista(mi,rid); if(v!==null) setSliding(d,mi,rid,v); });
 }
 const claveSl=(d,a,b)=>d+'|'+[a,b].slice().sort().join('|');
 function slidingDe(d,a,b){            // golpes que 'a' le da a 'b' (negativo = los recibe)
@@ -923,12 +961,13 @@ function dineroMatch(d,a,b){
 }
 /* Cuenta acumulada de presiones en los cuatro dias, contra cada rival que te toco */
 function cuentaPresiones(){
+  const mi=YO();
   const porRival={}, porDia=[]; let gran=0;
   for(let dd=0; dd<DIAS; dd++){
-    const g=(S.grupos[dd]||[]).find(x=>x.includes('j0'));
+    const g=(S.grupos[dd]||[]).find(x=>x.includes(mi));
     let dDia=null;
-    if(g) g.filter(id=>id!=='j0').forEach(rid=>{
-      const din=dineroMatch(dd,'j0',rid);
+    if(g) g.filter(id=>id!==mi).forEach(rid=>{
+      const din=dineroMatch(dd,mi,rid);
       if(din===null) return;
       porRival[rid]=(porRival[rid]||0)+din; gran+=din; dDia=(dDia||0)+din;
     });
@@ -949,12 +988,12 @@ function ligaScrollPresiones(){
   });
 }
 function vistaPresiones(){
-  const d=S.diaActivo, c=S.campos[d];
-  const miGrupo=S.grupos[d].find(g=>g.includes('j0'))||S.grupos[d][0];
-  const rivales=miGrupo.filter(id=>id!=='j0');
+  const d=S.diaActivo, c=S.campos[d], mi=YO();
+  const miGrupo=S.grupos[d].find(g=>g.includes(mi))||S.grupos[d][0];
+  const rivales=miGrupo.filter(id=>id!==mi);
   if(!rivales.length){ $('v-presiones').innerHTML='<p class="vacio-msg">No hay rivales en tu grupo.</p>'+seccionSliding(); return; }
   if(!rivales.includes(presRival)) presRival=rivales[0];
-  const m=presionesMatch(d,'j0',presRival);
+  const m=presionesMatch(d,mi,presRival);
   const sg=v=>v>0?'+'+v:(v<0?''+v:'0');
 
   let th='<th class="nom">Hoyo</th>';
@@ -1017,7 +1056,7 @@ function vistaPresiones(){
     <div class="segm">${segm}</div>
     <div class="scroll-x"><table class="card">
       <thead><tr>${th}</tr></thead>
-      <tbody><tr class="par">${fp}</tr>${filaG('j0','Tú')}${filaG(presRival,nomR)}</tbody>
+      <tbody><tr class="par">${fp}</tr>${filaG(mi,'Tú')}${filaG(presRival,nomR)}</tbody>
     </table></div>
     <h2 class="sec">Presiones · ${esc(veredicto)}</h2>
     <div class="scroll-x"><table class="card pres">
@@ -1057,7 +1096,7 @@ function vistaPresiones(){
     ${seccionSliding()}`;
   ligaScrollPresiones();
 }
-function setSlidingMio(d,rid,v){ setSliding(d,'j0',rid, -(parseInt(v,10)||0)); }
+function setSlidingMio(d,rid,v){ setSliding(d,YO(),rid, -(parseInt(v,10)||0)); }
 function agregaJugadorALista(jid){ S.lista.unshift({n:jug(jid).nombre,v:0,nota:''}); guardar(); render(); }
 let slidingAbierto=false;
 function seccionSliding(){
@@ -1086,11 +1125,12 @@ function seccionSliding(){
   S.lista.forEach((e,i)=>{ if(!enTorneo.has(i)) resto+=renglon(e,i,false); });
 
   /* --- botones para llevar la lista a cada día --- */
+  const mi=YO();
   let aplicar='';
   for(let d=0;d<DIAS;d++){
-    const g=(S.grupos[d]||[]).find(x=>x.includes('j0')); if(!g) continue;
-    const riv=g.filter(id=>id!=='j0');
-    const txt=riv.map(rid=>{ const v=slidingLista('j0',rid);
+    const g=(S.grupos[d]||[]).find(x=>x.includes(mi)); if(!g) continue;
+    const riv=g.filter(id=>id!==mi);
+    const txt=riv.map(rid=>{ const v=slidingLista(mi,rid);
       return corto(jug(rid).nombre)+' '+(v===null?'?':(v>0?'+'+v:v)); }).join(' · ');
     aplicar+=`<div class="ls-dia"><div><b>${esc(S.campos[d].fecha)}</b><br><span>${esc(txt)}</span></div>
       <button class="btn sec" onclick="aplicaListaAlDia(${d})">Aplicar</button></div>`;
@@ -1151,7 +1191,13 @@ function rehacerGrupos(){
 
 /* ---------- Ajustes ---------- */
 function vistaAjustes(){
-  let html=`<h2 class="sec">Torneo</h2>
+  let html=`<h2 class="sec">Yo soy</h2>
+    <select onchange="setYo(this.value)">${S.jugadores.map(j=>
+      `<option value="${j.id}" ${YO()===j.id?'selected':''}>${esc(j.nombre)}</option>`).join('')}</select>
+    <p class="nota-txt">Define el nombre de la pantalla de inicio y de quién son las presiones y ventajas
+      en este teléfono. Las ventajas del sliding solo aplican a Presiones — el torneo se juega con los
+      índices oficiales de abajo.</p>
+    <h2 class="sec">Torneo</h2>
     <div class="campo"><label>Nombre</label>
       <input type="text" value="${esc(S.torneo.nombre)}" onchange="S.torneo.nombre=this.value;guardar();render()"></div>
     <div class="segm">
@@ -1911,6 +1957,8 @@ function render(){
 cargar();
 setTimeout(()=>{ const p=document.getElementById('portada'); p&&p.remove(); }, 2700);
 render();
+pintarPortadaNombre();
+if(!S.yo) mostrarQuien();     // primera vez en este teléfono: elegir quién eres
 if(sincronizando()) cicloSync();
 setInterval(()=>cicloSync(), 15000);
 artInit();
