@@ -371,7 +371,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 16:58';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 17:03';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -2026,16 +2026,29 @@ function render(){
    pellizca con dos dedos para acercar (hasta 2.5×) y el botón
    flotante regresa al tamaño original.
    ============================================================ */
-let zoomBase=1, zoomActual=1;
+let zoomBase=1, zoomActual=1, pinchD0=0;
 function aplicaZoom(z){
   zoomActual=Math.max(1,Math.min(2.5,z));
   document.body.style.zoom=(zoomActual===1)?'':String(zoomActual);
   const b=$('zoomReset'); if(b) b.style.display=zoomActual>1?'':'none';
 }
 function zoomOriginal(){ aplicaZoom(1); }
-window.addEventListener('gesturestart',e=>{ e.preventDefault(); zoomBase=zoomActual; },{passive:false});
-window.addEventListener('gesturechange',e=>{ e.preventDefault(); aplicaZoom(zoomBase*e.scale); },{passive:false});
-window.addEventListener('gestureend',e=>{ e.preventDefault(); },{passive:false});
+/* pellizco con eventos táctiles estándar: la distancia entre los dos dedos
+   marca la escala (los GestureEvents de iOS no siempre llegan en el visor) */
+const distPellizco=t=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){ pinchD0=distPellizco(e.touches); zoomBase=zoomActual; }
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(e.touches.length===2&&pinchD0>0){
+    e.preventDefault();
+    aplicaZoom(zoomBase*distPellizco(e.touches)/pinchD0);
+  }
+},{passive:false});
+document.addEventListener('touchend',e=>{ if(e.touches.length<2) pinchD0=0; },{passive:true});
+/* suprime el intento de zoom nativo del navegador, que aquí no hace nada */
+window.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+window.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
 
 cargar();
 setTimeout(()=>{ const p=document.getElementById('portada'); p&&p.remove(); }, 2700);
