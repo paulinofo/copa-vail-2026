@@ -365,7 +365,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 16:21';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 16:40';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -699,7 +699,7 @@ function vistaHoy(){
         return esc(corto(jug(rid).nombre))+' '+(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')); }).join(' · ');
       const falta=rivs.some(rid=>slidingLista(MI,rid)===null);
       tee1=`<div class="tee1">
-        <div class="tee1-txt">${yaHay?'Golpes del día, según la lista o lo pactado.':'Salen parejos.'}
+        <div class="tee1-txt">${yaHay?'Golpes del día, según la regla o lo pactado.':'Salen parejos.'}
           <span>${esc(prev)}</span>${falta?'<span class="aviso">falta alguien en la lista</span>':''}</div>
         <div class="tee1-bt">
           <button class="btn sec" onclick="dejarParejos(${d})">Parejos</button>
@@ -905,18 +905,33 @@ function aplicaListaAlDia(d){
 }
 const claveSl=(d,a,b)=>d+'|'+[a,b].slice().sort().join('|');
 /* Golpes que 'a' le da a 'b' ese día (negativo = los recibe).
-   La regla aplica sola cada día que juegas: si no hay pacto explícito
-   para ese día, rigen las ventajas de la lista (la diferencia del
-   sliding) contra los rivales que te tocan según el rol de grupos.
-   Un pacto del tee — incluso "parejos" (0) — le gana a la lista,
-   solo ese día. */
+   La regla aplica sola cada día que juegas y va RODANDO: la primera vez
+   que dos se topan rigen las ventajas de la lista; la siguiente vez, lo
+   del juego anterior movido un golpe — el que perdió recibe uno más, el
+   que ganó lo da, y en tablas queda igual. Un pacto del tee — incluso
+   "parejos" (0) — le gana a la regla, solo ese día, y el rodado siguiente
+   parte del pacto. */
 function slidingDe(d,a,b){
   const k=claveSl(d,a,b);
   if(S.sliding && k in S.sliding){
     const v=S.sliding[k];
     return [a,b].slice().sort()[0]===a ? v : -v;
   }
-  const v=slidingLista(a,b);
+  return slidingRodado(d,a,b);
+}
+function slidingRodado(d,a,b){
+  /* último día previo en que 'a' y 'b' jugaron juntos con golpes capturados */
+  for(let p=d-1;p>=0;p--){
+    const g=(S.grupos[p]||[]).find(x=>x.includes(a)&&x.includes(b));
+    if(!g) continue;
+    const din=dineroMatch(p,a,b);
+    if(din===null) continue;            // jugaron juntos pero sin capturar: sigue atrás
+    const prev=slidingDe(p,a,b);
+    if(din<0) return prev-1;            // 'a' perdió: recibe un golpe más
+    if(din>0) return prev+1;            // 'a' ganó: da un golpe más
+    return prev;                        // tablas: se queda igual
+  }
+  const v=slidingLista(a,b);            // nunca se han topado: la lista
   return v===null ? 0 : v;
 }
 function setSliding(d,a,b,v){
@@ -1078,8 +1093,9 @@ function vistaPresiones(){
           <span class="${v<0?'arr':(v>0?'aba':'')}" style="min-width:64px;text-align:center">${v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')}</span>
           <button class="bt" style="width:30px;height:30px;font-size:19px" onclick="ajustaVentaja(${d},'${rid}',1)">+</button>
         </span></div>`; }).join('')}
-    <p class="nota-txt" style="margin-top:6px">Las ventajas salen solas de la lista según el rol del día.
-    Si pactan otra cosa en el tee (por ejemplo parejos), ajústala con − y +: el pacto le gana a la lista solo ese día.</p>
+    <p class="nota-txt" style="margin-top:6px">Las ventajas ruedan solas: la primera vez rige la lista y
+    de ahí en adelante, quien perdió el juego anterior recibe un golpe más la siguiente vez que se topen.
+    Si pactan otra cosa en el tee, ajústala con − y +: el pacto le gana a la regla solo ese día.</p>
     </div>`;
   $('v-presiones').innerHTML=`
     ${resumen}
@@ -1171,10 +1187,10 @@ function seccionSliding(){
     <p class="nota-txt" style="margin:8px 0 10px">Negativo da golpes, positivo los recibe. Entre dos jugadores
     se dan los golpes de la diferencia — por ejemplo −12 contra +3 son 15 golpes.</p>
     <div class="ls-gt">Los del torneo</div>${arriba}${faltan}
-    <h2 class="sec">La lista en cada día</h2>
-    <p class="nota-txt" style="margin:0 0 8px">La lista aplica sola cada día contra los rivales que te tocan
-    según el rol. Aplicar la fija como pacto explícito de ese día; si un día juegan distinto,
-    páctalo en el tee del 1 (Parejos también cuenta como pacto).</p>
+    <h2 class="sec">La regla en cada día</h2>
+    <p class="nota-txt" style="margin:0 0 8px">La primera vez que dos se topan rige la lista; después, la
+    ventaja rueda un golpe según quién perdió el juego anterior. Aplicar fija la lista como pacto explícito
+    de ese día; si juegan distinto, páctalo en el tee del 1 (Parejos también cuenta como pacto).</p>
     ${aplicar}</details>`;
 }
 function seccionGrupos(){
