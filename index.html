@@ -301,6 +301,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
 </style>
 </head>
 <body>
+<script type="application/json" id="estado-pub">{"v":1,"t":1787616000000,"ct":{},"grupos":[[["j4","j2","j6","j0"],["j1","j3","j5","j7"]],[["j4","j3","j7","j2"],["j1","j5","j6","j0"]],[["j4","j2","j5","j7"],["j6","j1","j3","j0"]],[["j4","j6","j1","j5"],["j2","j3","j7","j0"]]],"tg":1787616000000,"jugadores":[{"id":"j0","nombre":"Paulino Fernández","indice":16},{"id":"j1","nombre":"Paco Sánchez","indice":24},{"id":"j2","nombre":"Alfredo Pérez","indice":3},{"id":"j3","nombre":"Javier Gordillo","indice":11},{"id":"j4","nombre":"Juan Carlos Zepeda","indice":14},{"id":"j5","nombre":"Ramón Quintana","indice":17},{"id":"j6","nombre":"Vic Reyes","indice":15},{"id":"j7","nombre":"Doc","indice":9}],"tj":1787616000000,"scores":{"d0":{"j0":[6,5,4,7,5,7,5,6,7,3,7,8,6,9,7,4,5,7],"j1":[6,8,5,7,6,9,7,7,8,6,6,6,5,5,6,3,5,5],"j2":[4,2,7,4,3,4,4,9,4,4,5,4,3,6,5,5,6,5],"j3":[6,4,5,7,4,6,5,6,6,3,6,7,5,5,5,4,3,6],"j4":[7,4,5,6,6,4,7,7,6,3,7,7,6,6,8,3,4,7],"j5":[6,4,5,7,3,6,6,7,5,3,5,6,5,8,5,4,5,8],"j6":[6,5,6,6,3,4,6,8,6,5,5,6,6,8,6,5,6,7],"j7":[7,5,5,5,3,4,5,7,5,4,6,6,6,5,6,5,6,6]},"d1":{"j2":[6,6,5,5,7,6,3,5,4,2,6,4,4,4,5,5,4,5],"j3":[5,6,5,5,8,5,3,5,4,2,5,5,4,5,7,5,4,5],"j4":[6,4,6,5,8,4,3,5,7,5,6,7,6,6,7,5,4,5],"j7":[6,5,5,5,7,5,4,4,4,6,6,5,4,6,5,5,3,5],"j0":[5,7,5,7,7,6,5,8,7,3,6,7,5,5,6,6,5,9],"j1":[5,10,6,5,6,5,4,6,4,5,7,10,6,6,5,7,2,8],"j5":[5,8,4,5,7,7,6,5,4,3,7,5,7,7,5,5,6,5],"j6":[6,5,5,5,8,5,5,6,4,6,7,6,4,5,8,4,6,10]}}}</script>
 <div id="portada" aria-hidden="true">
   <svg class="p-marca" viewBox="0 0 96 96" fill="none">
     <ellipse cx="48" cy="78" rx="34" ry="9" fill="#20503C"/>
@@ -337,6 +338,12 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
 <nav id="nav"></nav>
 
 <script>
+/* La portada solo se muestra una vez por pestaña: las recargas del modo
+   en vivo (cada publicación recarga la vista) entran directo al marcador. */
+try{
+  if(sessionStorage.getItem('pi26-visto')){ const p=document.getElementById('portada'); p&&p.remove(); }
+  else sessionStorage.setItem('pi26-visto','1');
+}catch(e){}
 /* ============================================================
    1. DATOS DEL TORNEO
    ============================================================ */
@@ -547,6 +554,7 @@ function fijarScore(d,jid,h,v,tRemoto){
       if(S.pend.length>2000) S.pend=S.pend.slice(-1500);
       programarSync();
     }
+    artProgramar();
   }
   guardar();
 }
@@ -659,6 +667,7 @@ function vistaHoy(){
   }
   html+=`<div class="barra-prog"><i style="width:${(hechos/(8*HOYOS)*100).toFixed(1)}%"></i></div>
     <p class="nota-txt">${hechos} de 144 golpes capturados. Toca el guion para anotar el par y ajusta con − o +.</p>`;
+  if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
 }
 function setGrupo(i){ S.grupoActivo=i; borrador=null; guardar(); render(); }
@@ -784,6 +793,7 @@ function tocaJugador(d,gi,i){
   if(!selGrupo || selGrupo.d!==d){ selGrupo={d,gi,i}; render(); return; }
   const a=S.grupos[d][selGrupo.gi], b=S.grupos[d][gi];
   const t=a[selGrupo.i]; a[selGrupo.i]=b[i]; b[i]=t;
+  S.tg=Date.now(); artProgramar();
   selGrupo=null; guardar(); render();
 }
 /* ============================================================
@@ -1124,11 +1134,12 @@ function seccionGrupos(){
     </details>`;
   return html;
 }
-function setEsquema(e){ selGrupo=null; S.torneo.esquema=e; S.grupos=gruposFijando(e); guardar(); render(); }
+function setEsquema(e){ selGrupo=null; S.torneo.esquema=e; S.grupos=gruposFijando(e); S.tg=Date.now(); artProgramar(); guardar(); render(); }
 function rehacerGrupos(){
   // Vuelve a sortear los días 2 al 4; el grupo A del día 1 queda intacto
   selGrupo=null;
   S.grupos=gruposFijando(S.torneo.esquema,true);
+  S.tg=Date.now(); artProgramar();
   guardar(); render();
 }
 
@@ -1178,6 +1189,14 @@ function vistaAjustes(){
   html+=`<p class="nota-txt">Fazio, Norman y Vail traen la tarjeta completa y real. De EagleVail el par total
     es correcto pero el reparto por hoyo es estimado. Los rating y slope corresponden a salidas intermedias:
     ajústalos a la salida que jueguen.</p>`;
+  if(enVisor()){
+    html+=`<h2 class="sec">En vivo</h2>
+    <p class="nota-txt">Esta copia vive en la nube y se guarda sola: cada hoyo capturado se publica
+      como un momento después de la última captura, y todos los que tengan el enlace ven el torneo al día.
+      ${artRO?'Este teléfono es de solo lectura: ve el torneo en vivo, pero lo que capture no se comparte.':''}</p>
+    <button class="btn sec" onclick="artProgramar(0)">Sincronizar ahora</button>
+    <p class="nota-txt">Estado: ${esc(artEstado||'—')}${artPendiente()?' · hay capturas por subir':' · todo publicado'}.</p>`;
+  }else{
   html+=`<h2 class="sec">Ver el torneo en vivo</h2>
     <div class="segm">
       <button class="${S.sync.activo?'on':''}" onclick="setSync('activo',true)">Activada</button>
@@ -1199,6 +1218,7 @@ function vistaAjustes(){
       llena SYNC_URL_EMBEBIDA y SYNC_TOKEN_EMBEBIDO en el archivo antes de reenviarlo y a los demás les
       llega ya configurada.</p>
   `;
+  }
   html+=`<h2 class="sec">Invitar al grupo</h2>
     <button class="btn" onclick="compartirApp()">Mandar la app por WhatsApp</button>
     <p class="nota-txt">Manda el archivo junto con las instrucciones de instalación.
@@ -1242,18 +1262,29 @@ function gridHoyos(d,k){
   for(let h=9;h<18;h++) b+=`<input type="number" value="${S.campos[d][k][h]}" onchange="setHoyo(${d},'${k}',${h},this.value)">`;
   return a+'</div>'+b+'</div>';
 }
-function setJug(i,k,v){ S.jugadores[i][k]=k==='indice'?parseFloat(v)||0:v; guardar(); render(); }
+function setJug(i,k,v){ S.jugadores[i][k]=k==='indice'?parseFloat(v)||0:v; S.tj=Date.now(); artProgramar(); guardar(); render(); }
 function setCampo(d,k,v){ S.campos[d][k]=(k==='nombre')?v:parseFloat(v)||0; guardar(); render(); }
 function setHoyo(d,k,h,v){ S.campos[d][k][h]=parseInt(v)||0; guardar(); render(); }
 function setIA(k,v){ S.ia[k]=v.trim(); guardar(); render(); }
 function setFormato(f){ S.torneo.formato=f; guardar(); render(); }
 function setHcp(b){ S.torneo.usarHcp=b; guardar(); render(); }
 
-function exportar(){
-  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+async function exportar(){
+  const datos=JSON.stringify(S,null,2);
+  const nombre='pacos-invitacional-'+new Date().toISOString().slice(0,10)+'.json';
+  if(enVisor()){
+    /* dentro del visor las descargas pasan por la capacidad downloads */
+    try{
+      const dl=await window.claude.use('downloads');
+      if(dl){ await dl.save({filename:nombre,data:datos}); return; }
+    }catch(e){ return; }   // el visor puede declinar la descarga
+    alert('Aquí no hay descargas, pero cada captura ya queda respaldada sola en la nube.');
+    return;
+  }
+  const blob=new Blob([datos],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='pacos-invitacional-'+new Date().toISOString().slice(0,10)+'.json';
+  a.download=nombre;
   a.click(); URL.revokeObjectURL(a.href);
 }
 function importar(inp){
@@ -1301,7 +1332,10 @@ function vistaFoto(){
         <button class="btn sec" style="margin:0" onclick="$('camara').click()">Repetir foto</button>
         <button class="btn sec" style="margin:0" onclick="quitarFoto()">Quitar</button>
       </div>`;
-    if(S.ia.key){
+    if(enVisor()){
+      html+=`<p class="nota-txt">Dentro del visor en vivo no corre la lectura automática.
+        Usa la foto para transcribir abajo, o mándasela a Claude.</p>`;
+    }else if(S.ia.key){
       html+=`<button class="btn" onclick="leerConIA()" ${leyendo?'disabled':''}>
         ${leyendo?'Leyendo…':'Leer los scores con IA'}</button>`;
     }else{
@@ -1558,6 +1592,135 @@ function setSync(k,v){
 }
 
 /* ============================================================
+   4.6c EN VIVO — publicada como Artifact de Claude
+   La app publicada como Artifact se guarda a sí misma: el estado
+   compartido viaja en el bloque JSON id="estado-pub" dentro del
+   propio HTML. Al abrir, se fusiona celda por celda con la regla
+   de siempre (gana el sello de tiempo más reciente, S.ct); al
+   capturar, se re-publica el documento completo con debounce y
+   la vista de todos se recarga sola con la versión nueva.
+   Fuera del visor de claude.ai (espejo de GitHub Pages, archivo
+   local) todo esto se apaga solo y el bloque nomás siembra datos.
+   ============================================================ */
+const ART_URL='https://claude.ai/code/artifact/ee08dab0-1bbe-4910-a941-f25194c1e3e4';
+const ART_DEBOUNCE=45000;    // ms tras la última captura antes de publicar
+let art=null, artRO=false, artOcupado=false, artTimer=null, artEstado='';
+const enVisor=()=>!!(window.claude&&window.claude.use);
+
+function estadoPubLeer(){
+  const el=document.getElementById('estado-pub');
+  if(!el) return null;
+  try{ return JSON.parse(el.textContent); }catch(e){ return null; }
+}
+/* La misma regla que jalar(): por celda gana el sello más reciente. */
+function aplicarEstadoPub(pub){
+  if(!pub) return 0;
+  let cambios=0;
+  Object.entries(pub.scores||{}).forEach(([kd,jugs])=>{
+    const d=+kd.slice(1); if(!(d>=0&&d<DIAS)) return;
+    Object.entries(jugs||{}).forEach(([jid,arr])=>{
+      if(!jug(jid)||!Array.isArray(arr)) return;
+      arr.slice(0,HOYOS).forEach((v,h)=>{
+        const val=(v===undefined)?null:v;
+        if(val===null&&scoreDe(d,jid,h)===null) return;
+        const llave=d+'.'+jid+'.'+h;
+        const t=(pub.ct||{})[llave]||pub.t||0;
+        if(!(llave in S.ct)||t>S.ct[llave]){
+          if(scoreDe(d,jid,h)!==val){ fijarScore(d,jid,h,val,t); cambios++; }
+          else if(t>(S.ct[llave]||0)) S.ct[llave]=t;
+        }
+      });
+    });
+  });
+  if(pub.grupos&&pub.tg&&pub.tg>(S.tg||0)){ S.grupos=pub.grupos; S.tg=pub.tg; cambios++; }
+  if(pub.jugadores&&pub.tj&&pub.tj>(S.tj||0)){
+    pub.jugadores.forEach(pj=>{ const j=jug(pj.id); if(j){ j.nombre=pj.nombre; j.indice=pj.indice; } });
+    S.tj=pub.tj; cambios++;
+  }
+  if(cambios) guardar();
+  return cambios;
+}
+/* ¿Este teléfono tiene algo más nuevo que lo ya publicado? */
+function artPendiente(pub){
+  pub=pub||estadoPubLeer()||{};
+  const pct=pub.ct||{}, base=pub.t||0;
+  if((S.tg||0)>(pub.tg||base)) return true;
+  if((S.tj||0)>(pub.tj||base)) return true;
+  return Object.entries(S.ct||{}).some(([k,t])=>t>(pct[k]||base));
+}
+function estadoPubNuevo(){
+  const scores={};
+  Object.entries(S.scores||{}).forEach(([kd,jugs])=>{
+    const fila={};
+    Object.entries(jugs||{}).forEach(([jid,arr])=>{ if(jug(jid)&&Array.isArray(arr)) fila[jid]=arr.slice(0,HOYOS); });
+    if(Object.keys(fila).length) scores[kd]=fila;
+  });
+  return { v:1, t:Date.now(), ct:{...S.ct},
+    grupos:S.grupos, tg:S.tg||SEMILLA_TS,
+    jugadores:S.jugadores.map(j=>({id:j.id,nombre:j.nombre,indice:j.indice})), tj:S.tj||SEMILLA_TS,
+    scores };
+}
+function artProgramar(ms){
+  if(!art||artRO) return;
+  clearTimeout(artTimer);
+  artTimer=setTimeout(artPublicar, ms===undefined?ART_DEBOUNCE:ms);
+  pintarEstado();
+}
+async function artPublicar(){
+  if(!art||artRO||artOcupado) return;
+  if(!artPendiente()){ pintarEstado(); return; }
+  artOcupado=true; artEstado='subiendo'; pintarEstado();
+  try{
+    /* la fuente canónica es el documento servido, nunca el DOM vivo */
+    const r=await fetch(location.href,{cache:'no-store'});
+    if(!r.ok) throw {code:'fuente'};
+    const src=await r.text();
+    const rx=new RegExp('<script type="application\\/json" id="estado-pub">[\\s\\S]*?<\\/script>');
+    if(!rx.test(src)) throw {code:'sin-bloque'};
+    const json=JSON.stringify(estadoPubNuevo()).replace(/</g,'\\u003c');
+    const bloque='<script type="application/json" id="estado-pub">'+json+'<\/script>';
+    try{ sessionStorage.setItem('pi26-visto','1'); }catch(e){}
+    await art.publish(src.replace(rx,()=>bloque));
+    artEstado='en vivo';   /* la vista se recarga sola con la versión nueva */
+  }catch(e){
+    const c=e&&e.code;
+    if(c==='not_writer'||c==='not_granted'||c==='not_declared'||c==='consent_required'
+       ||c==='capability_disabled'||c==='capability_removed'){
+      artRO=true; S.artRO=true; guardar(); artEstado='solo lectura';
+    }else if(c==='conflict'){ artEstado='en vivo'; }
+    else if(c==='rate_limited'){ artEstado='esperando'; artProgramar(300000); }
+    else{ artEstado='sin señal'; artProgramar(90000); }
+  }
+  artOcupado=false; pintarEstado();
+}
+function pintarEstado(){
+  if(!art){ pintarSync(); return; }
+  const el=$('chipSync'); if(!el) return;
+  el.style.display='';
+  let txt='● en vivo', color='var(--ok)';
+  if(!artRO){
+    if(artEstado==='subiendo'){ txt='◌ subiendo…'; color='var(--laton)'; }
+    else if(artEstado==='sin señal'){ txt='○ sin señal'; color='var(--laton)'; }
+    else if(artEstado==='esperando'){ txt='○ esperando'; color='var(--laton)'; }
+    else if(artPendiente()){ txt='○ por subir'; color='var(--laton)'; }
+  }
+  el.textContent=txt; el.style.borderColor=color; el.style.color=color;
+}
+async function artInit(){
+  const pub=estadoPubLeer();
+  if(pub){ const n=aplicarEstadoPub(pub); if(n) render(); }   // también siembra el espejo
+  if(!enVisor()) return;
+  try{ art=await window.claude.use('artifact'); }catch(e){ art=null; }
+  if(!art) return;
+  artRO=!!S.artRO;
+  artEstado='en vivo';
+  window.addEventListener('online',()=>artProgramar(4000));
+  setInterval(()=>{ if(artPendiente()) artProgramar(8000); },90000);
+  if(artPendiente()) artProgramar(12000);
+  render();
+}
+
+/* ============================================================
    4.7 COMPARTIR Y UNIR SCORES
    Cada teléfono guarda su propia copia. Para que varios puedan
    anotar, cada quien manda su día en un código corto por WhatsApp
@@ -1661,6 +1824,18 @@ function textoInstalacion(){
     +`Así todos quedamos con el torneo completo.`;
 }
 async function compartirApp(){
+  if(enVisor()){
+    const texto=`🏌️ ${S.torneo.nombre} — marcador EN VIVO\n\n`
+      +`Ábrelo aquí y, en Safari, toca Compartir → Añadir a pantalla de inicio:\n`
+      +`${ART_URL||location.href}\n\n`
+      +`Se actualiza solo con cada hoyo que capturemos.`;
+    try{
+      if(navigator.share){ await navigator.share({text:texto}); return; }
+      await navigator.clipboard.writeText(texto);
+      alert('Enlace copiado. Pégalo en el grupo de WhatsApp.');
+    }catch(e){ if(e&&e.name==='AbortError') return; prompt('Copia esto y mándalo por WhatsApp:',texto); }
+    return;
+  }
   const texto=textoInstalacion();
   // 1) Intentar adjuntar el archivo mismo
   try{
@@ -1724,7 +1899,7 @@ function render(){
   VISTAS.forEach(v=>$('v-'+v.id).classList.toggle('on',S.vista===v.id));
   ({hoy:vistaHoy,foto:vistaFoto,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,ajustes:vistaAjustes})[S.vista]();
   pintarNav();
-  pintarSync();
+  pintarEstado();
 }
 
 cargar();
@@ -1732,6 +1907,6 @@ setTimeout(()=>{ const p=document.getElementById('portada'); p&&p.remove(); }, 2
 render();
 if(sincronizando()) cicloSync();
 setInterval(()=>cicloSync(), 15000);
+artInit();
 </script>
-</body>
-</html>
+</body></html>
