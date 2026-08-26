@@ -673,7 +673,7 @@ function cambiaGolpe(jid,n){
 /* ---------- Tarjeta ---------- */
 function vistaTarjeta(){
   const d=S.diaActivo,c=S.campos[d];
-  const ids=[...S.grupos[d][0],...S.grupos[d][1]];
+  const ids=S.grupos[d][S.grupoActivo]||S.grupos[d][0];
   const out=c.par.slice(0,9).reduce((a,b)=>a+b,0), inn=c.par.slice(9).reduce((a,b)=>a+b,0);
   let th='<th class="nom">Jugador</th>';
   for(let h=0;h<9;h++) th+=`<th>${h+1}</th>`; th+='<th>OUT</th>';
@@ -715,6 +715,10 @@ function vistaTarjeta(){
     El número junto a cada nombre son sus golpes de ventaja; la fila de arriba es el índice
     de dificultad de cada hoyo, que decide en cuáles los recibe.</p>`;
   $('v-tarjeta').innerHTML=`
+    <div class="segm">
+      <button class="${S.grupoActivo===0?'on':''}" onclick="setGrupo(0)">Grupo 1 · ${esc(c.salidas[0])}</button>
+      <button class="${S.grupoActivo===1?'on':''}" onclick="setGrupo(1)">Grupo 2 · ${esc(c.salidas[1])}</button>
+    </div>
     <div class="scroll-x"><table class="card">
       <thead><tr>${th}</tr></thead>
       <tbody><tr class="par">${fp}</tr>${filas}</tbody>
