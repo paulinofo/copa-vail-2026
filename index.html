@@ -689,11 +689,11 @@ function vistaHoy(){
     if(h===0){
       const rivs=grupo.filter(id=>id!==MI);
       const yaHay=rivs.some(rid=>slidingDe(d,MI,rid)!==0);
-      const prev=rivs.map(rid=>{ const v=slidingLista(MI,rid);
-        return esc(corto(jug(rid).nombre))+' '+(v===null?'?':(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos'))); }).join(' · ');
+      const prev=rivs.map(rid=>{ const v=slidingDe(d,MI,rid);
+        return esc(corto(jug(rid).nombre))+' '+(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')); }).join(' · ');
       const falta=rivs.some(rid=>slidingLista(MI,rid)===null);
       tee1=`<div class="tee1">
-        <div class="tee1-txt">${yaHay?'Golpes pactados para hoy.':'Salen parejos.'}
+        <div class="tee1-txt">${yaHay?'Golpes del día, según la lista o lo pactado.':'Salen parejos.'}
           <span>${esc(prev)}</span>${falta?'<span class="aviso">falta alguien en la lista</span>':''}</div>
         <div class="tee1-bt">
           <button class="btn sec" onclick="dejarParejos(${d})">Parejos</button>
@@ -898,9 +898,20 @@ function aplicaListaAlDia(d){
   g.filter(id=>id!==mi).forEach(rid=>{ const v=slidingLista(mi,rid); if(v!==null) setSliding(d,mi,rid,v); });
 }
 const claveSl=(d,a,b)=>d+'|'+[a,b].slice().sort().join('|');
-function slidingDe(d,a,b){            // golpes que 'a' le da a 'b' (negativo = los recibe)
-  const v=(S.sliding||{})[claveSl(d,a,b)]||0;
-  return [a,b].slice().sort()[0]===a ? v : -v;
+/* Golpes que 'a' le da a 'b' ese día (negativo = los recibe).
+   La regla aplica sola cada día que juegas: si no hay pacto explícito
+   para ese día, rigen las ventajas de la lista (la diferencia del
+   sliding) contra los rivales que te tocan según el rol de grupos.
+   Un pacto del tee — incluso "parejos" (0) — le gana a la lista,
+   solo ese día. */
+function slidingDe(d,a,b){
+  const k=claveSl(d,a,b);
+  if(S.sliding && k in S.sliding){
+    const v=S.sliding[k];
+    return [a,b].slice().sort()[0]===a ? v : -v;
+  }
+  const v=slidingLista(a,b);
+  return v===null ? 0 : v;
 }
 function setSliding(d,a,b,v){
   if(!S.sliding) S.sliding={};
@@ -909,8 +920,8 @@ function setSliding(d,a,b,v){
      Con 18 se guardaba menos de lo que anunciaba la pantalla del tee. */
   v=Math.max(-36,Math.min(36,v|0));
   const k=claveSl(d,a,b);
-  if(v===0) delete S.sliding[k];
-  else S.sliding[k] = ([a,b].slice().sort()[0]===a) ? v : -v;
+  /* el 0 se guarda explícito: "pactamos parejos" también le gana a la lista */
+  S.sliding[k] = ([a,b].slice().sort()[0]===a) ? v : -v;
   guardar(); render();
 }
 /* Sugerencia: quien perdio el dia anterior contra ese rival recibe un golpe mas. */
@@ -1145,9 +1156,10 @@ function seccionSliding(){
     <div class="ls-gt">En el Vail</div>${arriba}${faltan}
     <div class="ls-gt">Resto de la lista</div>${resto}
     <button class="btn sec" style="margin-top:10px" onclick="agregaLista()">Agregar jugador</button>
-    <h2 class="sec">Llevar la lista a cada día</h2>
-    <p class="nota-txt" style="margin:0 0 8px">Al aplicarla, los golpes de la diferencia entran en las presiones
-    de ese día. Si jugaron parejos, no la apliques.</p>
+    <h2 class="sec">La lista en cada día</h2>
+    <p class="nota-txt" style="margin:0 0 8px">La lista aplica sola cada día contra los rivales que te tocan
+    según el rol. Aplicar la fija como pacto explícito de ese día; si un día juegan distinto,
+    páctalo en el tee del 1 (Parejos también cuenta como pacto).</p>
     ${aplicar}</details>`;
 }
 function seccionGrupos(){
