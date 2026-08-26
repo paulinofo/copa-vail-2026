@@ -786,8 +786,8 @@ function tocaJugador(d,gi,i){
    2 abajo; ninguna se cierra: corren hasta el 9 y hasta el 18.
    ============================================================ */
 const VALOR_IDA    = 5;    // cada presion de la ida
-const VALOR_VUELTA = 10;   // cada presion de la vuelta: vale el doble
-const BONO_MAYORIA = 10;   // para quien acumule mas presiones entre las dos vueltas
+const VALOR_VUELTA = 5;    // cada presion de la vuelta
+const BONO_MAYORIA = 10;   // el match: para quien acumule mas presiones entre las dos vueltas
 /* Lista maestra de sliding del grupo.  − da golpes  ·  + los recibe. */
 const LISTA_SLIDING = [
   {n:'Paulino Fernandez Mora',v:-12},{n:'Juan Pablo Fer',v:2,nota:'Blancas'},
@@ -984,7 +984,7 @@ function vistaPresiones(){
   for(let h=9;h<18;h++) fu+='<td></td>';
   fu+=`<td class="tot ${dVta>0?'arr':(dVta<0?'aba':'')}">${sg(dVta)}</td>`;
   fu+=`<td class="tot ${dIda+dVta>0?'arr':(dIda+dVta<0?'aba':'')}">${sg(dIda+dVta)}</td>`;
-  /* la ida vale VALOR_IDA por presion, la vuelta el doble; el bono va para quien junte mas presiones */
+  /* ida y vuelta valen lo mismo por presion; el bono del match va para quien junte mas presiones */
   const bono = ganA>ganB ? BONO_MAYORIA : (ganB>ganA ? -BONO_MAYORIA : 0);
   const dinero = dIda + dVta + bono;
   const nomR=corto(jug(presRival).nombre);
