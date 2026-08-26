@@ -371,7 +371,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 17:13';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 17:32';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -925,7 +925,8 @@ function slidingDe(d,a,b){
   }
   return slidingRodado(d,a,b);
 }
-/* De dónde sale la ventaja de hoy con ese rival, para mostrarlo en la tarjeta */
+/* De dónde sale la ventaja de hoy con ese rival: qué tenías el día
+   anterior y cómo te fue — el chip de al lado ya dice con qué juegas hoy */
 function motivoSliding(d,a,b){
   const k=claveSl(d,a,b);
   if(S.sliding && k in S.sliding) return 'pactado ese día';
@@ -935,9 +936,9 @@ function motivoSliding(d,a,b){
     const din=dineroMatch(p,a,b);
     if(din===null) continue;
     const et=String(S.campos[p].fecha).split(' ')[0].toLowerCase();
-    return din<0?'recibes 1 por perder el '+et
-         : din>0?'das 1 por ganar el '+et
-         : 'igual: tablas el '+et;
+    const prev=slidingDe(p,a,b);
+    const tenias=prev<0?'te daba '+(-prev):(prev>0?'le dabas '+prev:'parejos');
+    return 'el '+et+': '+tenias+' · '+(din<0?'perdiste':(din>0?'ganaste':'tablas'));
   }
   return 'según la lista';
 }
