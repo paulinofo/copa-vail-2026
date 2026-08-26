@@ -1063,7 +1063,14 @@ function vistaPresiones(){
   const segm=rivales.map(id=>`<button class="${presRival===id?'on':''}" onclick="setRival('${id}')">${esc(corto(jug(id).nombre))}</button>`).join('');
   const veredicto = dinero===0 ? 'Tablas con '+esc(nomR)
     : (dinero>0 ? 'Te debe '+dinero+' '+esc(nomR) : 'Le debes '+Math.abs(dinero)+' a '+esc(nomR));
+  /* al abrir: tus rivales del día y la ventaja con cada uno */
+  const resumen=`<div class="grupo"><h3>Hoy juegas con <span>${esc(c.fecha)}</span></h3>
+    ${rivales.map(rid=>{ const v=slidingDe(d,mi,rid);
+      return `<div class="cuenta"><span>${esc(jug(rid).nombre)}</span>
+        <span class="${v<0?'arr':(v>0?'aba':'')}">${v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')}</span></div>`; }).join('')}
+    </div>`;
   $('v-presiones').innerHTML=`
+    ${resumen}
     <div class="segm">${segm}</div>
     <div class="scroll-x"><table class="card">
       <thead><tr>${th}</tr></thead>
