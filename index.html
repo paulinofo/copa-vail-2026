@@ -344,9 +344,9 @@ const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 5;   // sube al cambiar datos base: dispara migrar()
 
 /* --- Los 8 jugadores --- */
-/* Índices de handicap del torneo (capturados del comité, 25-ago).
+/* Índices de handicap del torneo (ajuste del comité, 25-ago pm).
    Son el punto de partida en cada teléfono; se pueden editar en Ajustes. */
-const INDICES_2026 = { j0:14, j1:26, j2:6, j3:14, j4:14, j5:17, j6:14, j7:9 };
+const INDICES_2026 = { j0:14, j1:26, j2:3, j3:13, j4:13, j5:18, j6:13, j7:9 };
 const JUGADORES = [
   'Paulino Fernández',
   'Paco Sánchez',
@@ -432,11 +432,12 @@ function cargar(){
   sembrar();
   if(S.vista==='sliding') S.vista='presiones';
   if(S.vista==='grupos') S.vista='ajustes';
-  if(S.idxSem!==2){
-    const prevIdx={ j1:12 };           // defaults viejos ya corregidos (Paco 12 -> 26)
+  if(S.idxSem!==3){
+    /* defaults viejos ya corregidos; una edición manual distinta se respeta */
+    const prevIdx={ j1:12, j2:6, j3:14, j4:14, j5:17, j6:14 };
     S.jugadores.forEach(j=>{ const v=INDICES_2026[j.id]; if(v===undefined) return;
       if(j.indice===15 || j.indice===prevIdx[j.id]) j.indice=v; });
-    S.idxSem=2; guardar();
+    S.idxSem=3; guardar();
   }
   // Al abrir, salta al día que corresponde a la fecha de hoy
   const d=new Date();                       // fecha LOCAL, no UTC
