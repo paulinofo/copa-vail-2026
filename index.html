@@ -1146,10 +1146,6 @@ function seccionSliding(){
       <span class="ls-n txt">${esc(j.nombre)}</span>
       <button class="btn sec ls-add" onclick="agregaJugadorALista('${j.id}')">Agregar</button></div>`;
   });
-  /* --- abajo: el resto de la lista --- */
-  let resto='';
-  S.lista.forEach((e,i)=>{ if(!enTorneo.has(i)) resto+=renglon(e,i,false); });
-
   /* --- botones para llevar la lista a cada día --- */
   const mi=YO();
   let aplicar='';
@@ -1168,9 +1164,7 @@ function seccionSliding(){
     <summary>Golf Sliding <span style="font-family:var(--mono);font-size:12px;color:var(--cal);font-weight:400">la lista y los golpes por día</span></summary>
     <p class="nota-txt" style="margin:8px 0 10px">Negativo da golpes, positivo los recibe. Entre dos jugadores
     se dan los golpes de la diferencia — por ejemplo −12 contra +3 son 15 golpes.</p>
-    <div class="ls-gt">En el Vail</div>${arriba}${faltan}
-    <div class="ls-gt">Resto de la lista</div>${resto}
-    <button class="btn sec" style="margin-top:10px" onclick="agregaLista()">Agregar jugador</button>
+    <div class="ls-gt">Los del torneo</div>${arriba}${faltan}
     <h2 class="sec">La lista en cada día</h2>
     <p class="nota-txt" style="margin:0 0 8px">La lista aplica sola cada día contra los rivales que te tocan
     según el rol. Aplicar la fija como pacto explícito de ese día; si un día juegan distinto,
