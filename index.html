@@ -341,7 +341,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
    1. DATOS DEL TORNEO
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
-const VERSION = 5;   // sube al cambiar datos base: dispara migrar()
+const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -475,14 +475,15 @@ function combinaciones(arr,k){
   })(0,[]);
   return res;
 }
-/* Los dos calendarios óptimos, ya resueltos.
-   Buscarlos en vivo cuesta ~2 s en una laptop y medio minuto en un iPhone,
-   y el resultado siempre es el mismo, así que van precalculados.
+/* Los dos calendarios, ya resueltos y precalculados.
    Ambos cumplen lo esencial: ningún foursome se repite en los 4 días.
-     convivencia → todos juegan con todos; 4 parejas coinciden 3 veces
+     convivencia → el calendario del torneo; su día 2 no es el óptimo
+       teórico sino cómo se jugó en la realidad el mar 25 (Paco y Doc
+       intercambiados), por eso dos parejas no se cruzan en los 4 días
+       (Javier-Paco y Vic-Doc) y seis coinciden 3 veces
      equilibrio  → nadie coincide más de 2 veces; 4 parejas no se cruzan  */
 const CALENDARIOS = {
-  convivencia: [[[0,1,2,3],[4,5,6,7]], [[0,1,4,5],[2,3,6,7]],
+  convivencia: [[[0,1,2,3],[4,5,6,7]], [[0,1,7,5],[4,6,2,3]],
                 [[0,1,6,7],[2,3,4,5]], [[0,2,4,6],[1,3,5,7]]],
   equilibrio:  [[[0,1,2,3],[4,5,6,7]], [[0,1,4,5],[2,3,6,7]],
                 [[0,2,4,6],[1,3,5,7]], [[0,3,5,6],[1,2,4,7]]]
