@@ -366,7 +366,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 16:51';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 16:55';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1123,15 +1123,35 @@ function vistaPresiones(){
         <span>${dinero===0?'—':Math.abs(dinero)}</span></div>
     </div>
     ${(()=>{ const q=cuentaPresiones();
-      const dias=q.porDia.map((v,i)=>v===null?'':`<div class="cuenta"><span>${esc(S.campos[i].fecha)} · ${esc(S.campos[i].nombre)}</span><span class="${v>0?'arr':(v<0?'aba':'')}">${v===0?'—':sg(v)}</span></div>`).join('');
+      let acum=0;
+      const dias=q.porDia.map((v,i)=>{ if(v===null) return '';
+        acum+=v;
+        return `<div class="cuenta"><span>${esc(S.campos[i].fecha)} · ${esc(S.campos[i].nombre)}</span>
+          <span class="${v>0?'arr':(v<0?'aba':'')}">${v===0?'—':sg(v)}<span
+          style="color:var(--tinta-suave);font-weight:400;font-size:12px"> · van ${sg(acum)}</span></span></div>`; }).join('');
       const riv=Object.entries(q.porRival).sort((a,b)=>a[1]-b[1])
         .map(([rid,v])=>`<div class="cuenta"><span>${esc(corto(jug(rid).nombre))}</span><span class="${v>0?'arr':(v<0?'aba':'')}">${sg(v)}</span></div>`).join('');
-      if(!riv) return '';
+      /* la ventaja con cada rival, día a día: lo jugado y la sugerencia rodada de lo que viene */
+      const et=['L','M','J','S'];
+      const rod=S.jugadores.filter(j=>j.id!==mi).map(j=>{
+        const partes=[];
+        for(let dd=0;dd<DIAS;dd++){
+          const g=(S.grupos[dd]||[]).find(x=>x.includes(mi));
+          if(!g||!g.includes(j.id)) continue;
+          const v=slidingDe(dd,mi,j.id);
+          partes.push(et[dd]+' '+(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')));
+        }
+        if(!partes.length) return '';
+        return `<div class="cuenta"><span>${esc(corto(j.nombre))}</span>
+          <span style="font-weight:400;font-size:12.5px">${partes.join(' · ')}</span></div>`;
+      }).join('');
+      if(!riv&&!rod) return '';
       return `<div class="grupo" style="margin-top:10px"><h3>Cuenta del torneo <span>presiones</span></h3>
         ${dias}
         <div class="cuenta total"><span>${q.gran<0?'Vas pagando':(q.gran>0?'Vas cobrando':'Vas a mano')}</span>
           <span>${q.gran===0?'—':Math.abs(q.gran)}</span></div>
-        <div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}</div>`; })()}
+        ${riv?`<div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}`:''}
+        ${rod?`<div class="sl-gt" style="margin-top:10px">El sliding día a día</div>${rod}`:''}</div>`; })()}
     ${seccionSliding()}`;
   ligaScrollPresiones();
 }
