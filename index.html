@@ -398,7 +398,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 23:23';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 23:27';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1256,26 +1256,38 @@ function seccionSliding(){
   const enTorneo=new Map();          // indice en la lista -> id del jugador del Vail
   S.jugadores.forEach(j=>{ const i=idxLista(j.nombre); if(i>=0 && !enTorneo.has(i)) enTorneo.set(i,j.id); });
 
-  const renglon=(e,i,marca,hoy)=>`<div class="ls-fila${marca?' vail':''}${hoy?' hoy':''}">
+  const renglon=(e,i,marca,hoy,tag)=>`<div class="ls-fila${marca?' vail':''}${hoy?' hoy':''}">
       <input class="ls-n" type="text" value="${esc(e.n)}" onchange="setLista(${i},'n',this.value)">
-      ${hoy?'<span class="ls-nota">hoy</span>':''}
+      ${tag?`<span class="ls-nota">${esc(tag)}</span>`:''}
       ${e.nota?`<span class="ls-nota">${esc(e.nota)}</span>`:''}
       <input class="ls-v ${e.v>0?'arr':(e.v<0?'aba':'')}" type="number" step="1" value="${e.v}"
         onchange="setLista(${i},'v',this.value)">
       <button class="ls-x" onclick="borraLista(${i})">✕</button>
     </div>`;
 
-  /* --- arriba: los que sí juegan el Vail; tus rivales del día van destacados --- */
+  /* --- arriba: los que sí juegan el Vail; cada renglón señala QUÉ DÍAS te
+     toca ese compañero según el rol (L·M·J·S), y los del día elegido van
+     destacados en dorado --- */
   const gHoy=(S.grupos[S.diaActivo]||[]).find(x=>x.includes(YO()));
   const hoyRiv=new Set(gHoy?gHoy.filter(id=>id!==YO()):[]);
+  const etDia=['L','M','J','S'];
+  const diasCon=j2=>{
+    const t=[];
+    for(let d2=0;d2<DIAS;d2++){
+      const g2=(S.grupos[d2]||[]).find(x=>x.includes(YO()));
+      if(g2&&g2.includes(j2)) t.push(etDia[d2]);
+    }
+    return t.join('·');
+  };
   let arriba='', faltan='';
   S.jugadores.forEach(j=>{
     if(j.id===YO()) return;   // tu propio renglón no se muestra en tu teléfono
     const i=idxLista(j.nombre);
-    if(i>=0) arriba+=renglon(S.lista[i],i,true,hoyRiv.has(j.id));
+    const tag=diasCon(j.id);
+    if(i>=0) arriba+=renglon(S.lista[i],i,true,hoyRiv.has(j.id),tag);
     else faltan+=`<div class="ls-fila falta${hoyRiv.has(j.id)?' hoy':''}">
       <span class="ls-n txt">${esc(j.nombre)}</span>
-      ${hoyRiv.has(j.id)?'<span class="ls-nota">hoy</span>':''}
+      ${tag?`<span class="ls-nota">${esc(tag)}</span>`:''}
       <button class="btn sec ls-add" onclick="agregaJugadorALista('${j.id}')">Agregar</button></div>`;
   });
   /* --- botones para llevar la lista a cada día --- */
