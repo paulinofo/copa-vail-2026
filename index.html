@@ -388,7 +388,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 22:18';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 22:36';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1802,6 +1802,7 @@ function setSync(k,v){
    local) todo esto se apaga solo y el bloque nomás siembra datos.
    ============================================================ */
 const ART_URL='https://claude.ai/code/artifact/ee08dab0-1bbe-4910-a941-f25194c1e3e4';
+const ESPEJO_URL='https://paulinofo.github.io/copa-vail-2026/';
 const ART_DEBOUNCE=45000;    // ms tras la última captura antes de publicar
 let art=null, artRO=false, artOcupado=false, artTimer=null, artEstado='';
 const enVisor=()=>!!(window.claude&&window.claude.use);
@@ -1920,6 +1921,28 @@ async function artInit(){
 }
 
 /* ============================================================
+   4.6d ESPEJO SEMI-VIVO — fuera del visor (GitHub Pages), la app
+   jala su propio HTML publicado con rompe-caché y fusiona el
+   bloque estado-pub: cada minuto, al recuperar señal y cada vez
+   que la app vuelve al frente. Así el espejo se actualiza solo
+   aunque el iPhone cachee la página instalada.
+   ============================================================ */
+let espejoOcupado=false;
+async function refrescarEspejo(){
+  if(enVisor()||espejoOcupado||location.protocol==='file:') return;
+  espejoOcupado=true;
+  try{
+    const r=await fetch(location.pathname+'?sync='+Date.now(),{cache:'no-store'});
+    if(r.ok){
+      const t=await r.text();
+      const m=t.match(/<script type="application\/json" id="estado-pub">([\s\S]*?)<\/script>/);
+      if(m){ const n=aplicarEstadoPub(JSON.parse(m[1])); if(n) render(); }
+    }
+  }catch(e){ /* sin señal: se reintenta solo */ }
+  espejoOcupado=false;
+}
+
+/* ============================================================
    4.7 COMPARTIR Y UNIR SCORES
    Cada teléfono guarda su propia copia. Para que varios puedan
    anotar, cada quien manda su día en un código corto por WhatsApp
@@ -2035,23 +2058,14 @@ async function compartirApp(){
     }catch(e){ if(e&&e.name==='AbortError') return; prompt('Copia esto y mándalo por WhatsApp:',texto); }
     return;
   }
-  const texto=textoInstalacion();
-  // 1) Intentar adjuntar el archivo mismo
-  try{
-    const r=await fetch(location.href);
-    if(r.ok){
-      const html=await r.text();
-      const archivo=new File([html],'pacos-invitacional-2026.html',{type:'text/html'});
-      if(navigator.canShare&&navigator.canShare({files:[archivo]})){
-        await navigator.share({files:[archivo],text:texto}); return;
-      }
-    }
-  }catch(e){ /* file:// suele bloquear leerse a sí mismo */ }
-  // 2) Mandar al menos el instructivo
+  const texto=`🏌️ ${S.torneo.nombre} — el marcador del torneo\n\n`
+    +`Ábrelo aquí:\n${ESPEJO_URL}\n\n`
+    +`Toca tu nombre al entrar y la app te guía para dejarla\n`
+    +`instalada con su icono. Se actualiza sola durante las rondas.`;
   try{
     if(navigator.share){ await navigator.share({text:texto}); return; }
     await navigator.clipboard.writeText(texto);
-    alert('Instructivo copiado. Pégalo en el grupo de WhatsApp y adjunta el archivo.');
+    alert('Enlace copiado. Pégalo en el grupo de WhatsApp.');
   }catch(e){
     if(e&&e.name==='AbortError') return;
     prompt('Copia esto y mándalo por WhatsApp:',texto);
@@ -2141,5 +2155,11 @@ else if(S.yo&&!S.instalada) mostrarInstalador();   // recordar la instalación h
 if(sincronizando()) cicloSync();
 setInterval(()=>cicloSync(), 15000);
 artInit();
+if(!enVisor()&&location.protocol!=='file:'){   // espejo: refresco automático
+  setInterval(refrescarEspejo,60000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) refrescarEspejo(); });
+  window.addEventListener('online',refrescarEspejo);
+  refrescarEspejo();
+}
 </script>
 </body></html>
