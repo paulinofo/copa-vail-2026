@@ -39,6 +39,9 @@ header{position:sticky;top:0;z-index:30;background:var(--verde);
 .marca h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.02em;text-transform:uppercase}
 .marca .fmt{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
   color:var(--laton);border:1px solid var(--laton);border-radius:4px;padding:2px 6px;white-space:nowrap}
+.quien-soy{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--laton);text-align:right;margin-top:4px}
+.quien-soy:empty{display:none}
 .dias{display:flex;gap:6px;margin:11px 0 0;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
 .dias::-webkit-scrollbar{display:none}
 .dia{flex:1 0 auto;padding:7px 14px;border-radius:99px;font-size:14.5px;font-weight:600;background:transparent;
@@ -361,6 +364,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
     <span class="fmt" id="chipSync" style="display:none"></span>
     <span class="fmt" id="chipFormato">Stableford</span>
   </div>
+  <div class="quien-soy" id="quienSoy"></div>
   <div class="dias" id="tabsDias"></div>
 </header>
 
@@ -388,7 +392,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 23:08';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 23:11';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -2118,6 +2122,7 @@ function setDia(d){ S.diaActivo=d; S.hoyoActivo=0; borrador=null; guardar(); ren
 function render(){
   $('tituloTorneo').textContent=S.torneo.nombre;
   $('chipFormato').textContent=(esStableford()?'Stableford':'Stroke')+(S.torneo.usarHcp?' · neto':' · bruto');
+  $('quienSoy').textContent=(S.yo&&jug(S.yo))?jug(S.yo).nombre:'';
   $('tabsDias').innerHTML=S.campos.map((c,d)=>
     `<button class="dia ${S.diaActivo===d?'on':''}" onclick="setDia(${d})">
       <b>${esc(c.nombre)}</b><i>${esc(c.fecha)} · ${esc(c.salidas[0])}</i></button>`).join('');
