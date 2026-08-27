@@ -388,7 +388,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 21:38';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 22:18';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -600,6 +600,8 @@ function mostrarInstalador(){
   const div=document.createElement('div'); div.id='instalar';
   div.innerHTML='<h2>Déjala instalada</h2>'
     +'<p class="inst-sub">para abrirla como app, con su propio icono</p>'
+    +'<div class="inst-paso"><b>0</b> · ¿La abriste desde WhatsApp?<br>'
+    +'<small>toca el icono de <b>Safari</b> (la brújula, abajo a la derecha) para pasarla a Safari — solo ahí se puede instalar</small></div>'
     +'<div class="inst-paso"><b>1</b> · Toca el botón <span class="inst-ic">⬆︎</span> <b>Compartir</b><br>'
     +'<small>el cuadrito con la flecha, en la barra de Safari</small></div>'
     +'<div class="inst-paso"><b>2</b> · Elige <b>&ldquo;Añadir a pantalla de inicio&rdquo;</b><br>'
