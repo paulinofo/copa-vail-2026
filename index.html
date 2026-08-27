@@ -398,7 +398,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 23:21';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 23:23';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1239,26 +1239,11 @@ function vistaPresiones(){
       }).join('');
       const riv=Object.entries(q.porRival).sort((a,b)=>a[1]-b[1])
         .map(([rid,v])=>`<div class="cuenta"><span>${esc(corto(jug(rid).nombre))}</span><span class="${v>0?'arr':(v<0?'aba':'')}">${sg(v)}</span></div>`).join('');
-      /* la ventaja con cada rival, día a día: lo jugado y la sugerencia rodada de lo que viene */
-      const et=['L','M','J','S'];
-      const rod=S.jugadores.filter(j=>j.id!==mi).map(j=>{
-        const partes=[];
-        for(let dd=0;dd<DIAS;dd++){
-          const g=(S.grupos[dd]||[]).find(x=>x.includes(mi));
-          if(!g||!g.includes(j.id)) continue;
-          const v=slidingDe(dd,mi,j.id);
-          partes.push(et[dd]+' '+(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')));
-        }
-        if(!partes.length) return '';
-        return `<div class="cuenta"><span>${esc(corto(j.nombre))}</span>
-          <span style="font-weight:400;font-size:12.5px">${partes.join(' · ')}</span></div>`;
-      }).join('');
       return `<div class="grupo" style="margin-top:10px"><h3>Cuenta del torneo <span>presiones</span></h3>
         ${dias}
         <div class="cuenta total"><span>${q.gran<0?'Vas pagando':(q.gran>0?'Vas cobrando':'Vas a mano')}</span>
           <span>${q.gran===0?'—':Math.abs(q.gran)}</span></div>
-        ${riv?`<div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}`:''}
-        ${rod?`<div class="sl-gt" style="margin-top:10px">El sliding día a día</div>${rod}`:''}</div>`; })()}
+        ${riv?`<div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}`:''}</div>`; })()}
     ${seccionSliding()}`;
   ligaScrollPresiones();
 }
