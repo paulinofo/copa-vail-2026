@@ -371,7 +371,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 17:32';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 20:30';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -888,7 +888,9 @@ function idxLista(nombre){
   });
   return c.length===1?c[0]:-1;
 }
-function valorLista(jid){ const i=idxLista(jug(jid).nombre); return i<0?null:(parseInt(S.lista[i].v,10)||0); }
+function valorLista(jid){ const i=idxLista(jug(jid).nombre);
+  if(i<0) return jid===YO() ? 0 : null;   // tu propio renglón ausente cuenta como 0
+  return (parseInt(S.lista[i].v,10)||0); }
 /* Golpes que 'a' le da a 'b' según la lista: la diferencia entre sus valores. */
 function slidingLista(a,b){ const va=valorLista(a), vb=valorLista(b);
   return (va===null||vb===null)?null:(vb-va); }
