@@ -226,6 +226,19 @@ textarea.codigo:focus{outline:2px solid var(--laton);outline-offset:1px}
   letter-spacing:.08em;text-align:center;line-height:1.5}
 #quien .btn{max-width:340px;width:100%;margin-top:8px}
 
+/* ---- guía de instalación paso a paso ---- */
+#instalar{position:fixed;inset:0;z-index:95;background:var(--verde-hondo);display:flex;
+  flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center;overflow-y:auto}
+#instalar h2{margin:0 0 4px;font-size:26px;font-weight:800;color:var(--tarjeta);text-transform:uppercase;letter-spacing:-.01em}
+#instalar .inst-sub{margin:0 0 18px;font-family:var(--mono);font-size:12.5px;color:var(--cal);letter-spacing:.08em}
+#instalar .inst-paso{background:var(--verde);border:1px solid var(--verde-linea);border-radius:var(--r);
+  padding:16px;margin-bottom:10px;font-size:19px;color:var(--tarjeta);width:100%;max-width:340px;line-height:1.5}
+#instalar .inst-paso b{color:var(--laton)}
+#instalar .inst-paso small{color:var(--cal);font-size:13.5px}
+#instalar .inst-ic{display:inline-grid;place-items:center;width:30px;height:30px;border:1.5px solid var(--laton);
+  border-radius:7px;color:var(--laton);font-size:16px;vertical-align:middle}
+#instalar .btn{max-width:340px;width:100%}
+
 #zoomReset{position:fixed;right:12px;bottom:calc(84px + var(--safe-b));z-index:60;display:none;
   font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:var(--verde-hondo);
   background:var(--laton);border-radius:99px;padding:9px 14px;font-weight:700;
@@ -375,7 +388,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 21:26';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 21:38';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -566,7 +579,37 @@ function setYo(id){
   S.yo=id; guardar();
   const q=document.getElementById('quien'); q&&q.remove();
   pintarPortadaNombre(); render();
+  mostrarInstalador();
 }
+/* ============================================================
+   GUÍA DE INSTALACIÓN — en iPhone no existe instalar con un
+   toque (Apple exige Compartir → Añadir a pantalla de inicio),
+   así que la app guía el gesto con pasos gigantes y deja de
+   insistir cuando confirman que quedó (o al detectar que ya
+   corre desde la pantalla de inicio).
+   ============================================================ */
+const enPantallaInicio=()=>{
+  try{
+    if(navigator.standalone===true) return true;
+    if(window.matchMedia&&matchMedia('(display-mode: standalone)').matches) return true;
+  }catch(e){}
+  return false;
+};
+function mostrarInstalador(){
+  if(S.instalada||enPantallaInicio()||document.getElementById('instalar')) return;
+  const div=document.createElement('div'); div.id='instalar';
+  div.innerHTML='<h2>Déjala instalada</h2>'
+    +'<p class="inst-sub">para abrirla como app, con su propio icono</p>'
+    +'<div class="inst-paso"><b>1</b> · Toca el botón <span class="inst-ic">⬆︎</span> <b>Compartir</b><br>'
+    +'<small>el cuadrito con la flecha, en la barra de Safari</small></div>'
+    +'<div class="inst-paso"><b>2</b> · Elige <b>&ldquo;Añadir a pantalla de inicio&rdquo;</b><br>'
+    +'<small>desliza el menú hacia abajo si no lo ves</small></div>'
+    +'<button class="btn" onclick="instalarListo()">Ya quedó ✓</button>'
+    +'<button class="btn sec" onclick="instalarLuego()">Al rato</button>';
+  document.body.appendChild(div);
+}
+function instalarListo(){ S.instalada=true; guardar(); const d=document.getElementById('instalar'); d&&d.remove(); }
+function instalarLuego(){ const d=document.getElementById('instalar'); d&&d.remove(); }
 function pintarPortadaNombre(){
   const el=document.getElementById('p-jugador');
   if(el&&S.yo&&jug(S.yo)) el.textContent=jug(S.yo).nombre;
@@ -2091,6 +2134,8 @@ setTimeout(()=>{ const p=document.getElementById('portada'); p&&p.remove(); }, 2
 render();
 pintarPortadaNombre();
 if(!S.yo) mostrarQuien();     // primera vez en este teléfono: elegir quién eres
+if(enPantallaInicio()&&!S.instalada){ S.instalada=true; guardar(); }   // ya corre como app
+else if(S.yo&&!S.instalada) mostrarInstalador();   // recordar la instalación hasta que quede
 if(sincronizando()) cicloSync();
 setInterval(()=>cicloSync(), 15000);
 artInit();
