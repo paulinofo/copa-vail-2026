@@ -370,7 +370,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
 
 <main>
   <section class="vista on" id="v-hoy"></section>
-  <section class="vista" id="v-foto"></section>
+  <section class="vista" id="v-grupos"></section>
   <section class="vista" id="v-tarjeta"></section>
   <section class="vista" id="v-pos"></section>
   <section class="vista" id="v-presiones"></section>
@@ -392,7 +392,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 23:11';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 23:14';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -482,7 +482,7 @@ function cargar(){
   if(!S.grupos) S.grupos=gruposFijando(S.torneo.esquema);
   sembrar();
   if(S.vista==='sliding') S.vista='presiones';
-  if(S.vista==='grupos') S.vista='ajustes';
+  if(S.vista==='foto') S.vista='grupos';
   if(S.idxSem!==4){
     /* defaults de generaciones anteriores; una edición manual distinta se respeta */
     const prevIdx={ j0:[14], j1:[12,26], j2:[6], j3:[14,13], j4:[14,13], j5:[17,18], j6:[14,13] };
@@ -1351,6 +1351,9 @@ function rehacerGrupos(){
   guardar(); render();
 }
 
+/* ---------- Grupos (pestaña propia; antes vivía dentro de Ajustes) ---------- */
+function vistaGrupos(){ $('v-grupos').innerHTML=seccionGrupos(); }
+
 /* ---------- Ajustes ---------- */
 function vistaAjustes(){
   let html=`<h2 class="sec">Yo soy</h2>
@@ -1439,7 +1442,6 @@ function vistaAjustes(){
       Si tu iPhone no deja adjuntarlo desde aquí, va el instructivo y tú adjuntas el archivo
       en el mismo mensaje.</p>
   `;
-  html+=seccionGrupos();
   html+=`<h2 class="sec">Compartir y unir scores</h2>
     ${msgUnir?'<div class="ok-msg">'+esc(msgUnir)+'</div>':''}
     ${errUnir?'<div class="err">'+esc(errUnir)+'</div>':''}
@@ -1450,16 +1452,6 @@ function vistaAjustes(){
     <button class="btn sec" onclick="unirCodigo($('pegado').value,true)">Unir y reemplazar lo distinto</button>
     <p class="nota-txt">Cada quien anota su foursome y manda su código al grupo; el que lo recibe lo une y
       queda con el torneo completo. Los huecos se rellenan solos y solo se avisan los golpes que no coinciden.</p>
-    <h2 class="sec">Leer la tarjeta con IA</h2>
-    <div class="campo"><label>API key de Anthropic</label>
-      <input type="text" value="${esc(S.ia.key)}" placeholder="sk-ant-…"
-        onchange="setIA('key',this.value)" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-    <div class="campo"><label>Modelo</label>
-      <input type="text" value="${esc(S.ia.modelo)}" onchange="setIA('modelo',this.value)"
-        autocomplete="off" autocapitalize="off" spellcheck="false"></div>
-    <p class="nota-txt">La key se guarda solo en este teléfono y se manda directo a Anthropic; no pasa por
-      ningún otro lado. Se saca en console.anthropic.com y cada lectura cuesta unos centavos.
-      Sin key la app funciona igual: la foto te sirve para transcribir a mano.</p>
     <h2 class="sec">Respaldo</h2>
     <button class="btn sec" onclick="exportar()">Descargar respaldo (.json)</button>
     <button class="btn sec" onclick="$('archivo').click()">Restaurar desde respaldo</button>
@@ -2109,7 +2101,7 @@ const VISTAS=[
   {id:'tarjeta',et:'Tarjeta',svg:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'},
   {id:'pos',et:'Tabla',svg:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'},
   {id:'presiones',et:'Presiones',svg:'<path d="M4 19h16"/><path d="M7 19V9"/><path d="M12 19V5"/><path d="M17 19v-6"/><circle cx="12" cy="5" r="1.6"/>'},
-  {id:'foto',et:'Foto',svg:'<path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/>'},
+  {id:'grupos',et:'Grupos',svg:'<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 20c0-3.4 2.6-6 6-6s6 2.6 6 6"/><path d="M15.5 14.6c2.6.5 4.5 2.7 4.5 5.4"/>'},
   {id:'ajustes',et:'Ajustes',svg:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'}
 ];
 function pintarNav(){
@@ -2127,7 +2119,7 @@ function render(){
     `<button class="dia ${S.diaActivo===d?'on':''}" onclick="setDia(${d})">
       <b>${esc(c.nombre)}</b><i>${esc(c.fecha)} · ${esc(c.salidas[0])}</i></button>`).join('');
   VISTAS.forEach(v=>$('v-'+v.id).classList.toggle('on',S.vista===v.id));
-  ({hoy:vistaHoy,foto:vistaFoto,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,ajustes:vistaAjustes})[S.vista]();
+  ({hoy:vistaHoy,grupos:vistaGrupos,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,ajustes:vistaAjustes})[S.vista]();
   pintarNav();
   pintarEstado();
 }
