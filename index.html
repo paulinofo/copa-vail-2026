@@ -388,7 +388,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 22:49';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 23:08';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -922,7 +922,7 @@ const VALOR_VUELTA = 5;    // cada presion de la vuelta
 const BONO_MAYORIA = 10;   // el match: para quien acumule mas presiones entre las dos vueltas
 /* Lista maestra de sliding del grupo.  − da golpes  ·  + los recibe. */
 const LISTA_SLIDING = [
-  {n:'Paulino Fernandez Mora',v:-12},{n:'Juan Pablo Fer',v:2,nota:'Blancas'},
+  {n:'Paulino Fernández',v:-12},{n:'Juan Pablo Fer',v:2,nota:'Blancas'},
   {n:'Dario Mora',v:-18},{n:'Francisco',v:-1},{n:'Enrique Ponzanelli',v:1},
   {n:'Eduardo Dommit',v:3},{n:'Francisco Cuevas',v:-3},{n:'Chango',v:1},
   {n:'Javier Gordillo',v:3},{n:'Ponza',v:-2},{n:'Carlos Alvarez Figueroa',v:-10},
@@ -1275,6 +1275,7 @@ function seccionSliding(){
   const hoyRiv=new Set(gHoy?gHoy.filter(id=>id!==YO()):[]);
   let arriba='', faltan='';
   S.jugadores.forEach(j=>{
+    if(j.id===YO()) return;   // tu propio renglón no se muestra en tu teléfono
     const i=idxLista(j.nombre);
     if(i>=0) arriba+=renglon(S.lista[i],i,true,hoyRiv.has(j.id));
     else faltan+=`<div class="ls-fila falta${hoyRiv.has(j.id)?' hoy':''}">
