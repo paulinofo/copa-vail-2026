@@ -388,7 +388,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 26 ago 2026 · 22:36';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 26 ago 2026 · 22:49';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1209,12 +1209,24 @@ function vistaPresiones(){
         <span>${dinero===0?'—':Math.abs(dinero)}</span></div>
     </div>
     ${(()=>{ const q=cuentaPresiones();
+      /* los 4 campos siempre: los jugados con su dinero y el acumulado,
+         los que faltan con tus rivales y "por jugar" */
       let acum=0;
-      const dias=q.porDia.map((v,i)=>{ if(v===null) return '';
+      const dias=S.campos.map((c2,i)=>{
+        const g=(S.grupos[i]||[]).find(x=>x.includes(mi));
+        const rivs=g?g.filter(r=>r!==mi).map(r=>corto(jug(r).nombre)).join(', '):'';
+        const v=q.porDia[i];
+        if(v===null||v===undefined){
+          return `<div class="cuenta"><span>${esc(c2.fecha)} · ${esc(c2.nombre)}<br>
+            <i style="font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--tinta-suave)">${esc(rivs)}</i></span>
+            <span style="font-weight:400;color:var(--tinta-suave)">por jugar</span></div>`;
+        }
         acum+=v;
-        return `<div class="cuenta"><span>${esc(S.campos[i].fecha)} · ${esc(S.campos[i].nombre)}</span>
+        return `<div class="cuenta"><span>${esc(c2.fecha)} · ${esc(c2.nombre)}<br>
+          <i style="font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--tinta-suave)">${esc(rivs)}</i></span>
           <span class="${v>0?'arr':(v<0?'aba':'')}">${v===0?'—':sg(v)}<span
-          style="color:var(--tinta-suave);font-weight:400;font-size:12px"> · van ${sg(acum)}</span></span></div>`; }).join('');
+          style="color:var(--tinta-suave);font-weight:400;font-size:12px"> · van ${sg(acum)}</span></span></div>`;
+      }).join('');
       const riv=Object.entries(q.porRival).sort((a,b)=>a[1]-b[1])
         .map(([rid,v])=>`<div class="cuenta"><span>${esc(corto(jug(rid).nombre))}</span><span class="${v>0?'arr':(v<0?'aba':'')}">${sg(v)}</span></div>`).join('');
       /* la ventaja con cada rival, día a día: lo jugado y la sugerencia rodada de lo que viene */
@@ -1231,7 +1243,6 @@ function vistaPresiones(){
         return `<div class="cuenta"><span>${esc(corto(j.nombre))}</span>
           <span style="font-weight:400;font-size:12.5px">${partes.join(' · ')}</span></div>`;
       }).join('');
-      if(!riv&&!rod) return '';
       return `<div class="grupo" style="margin-top:10px"><h3>Cuenta del torneo <span>presiones</span></h3>
         ${dias}
         <div class="cuenta total"><span>${q.gran<0?'Vas pagando':(q.gran>0?'Vas cobrando':'Vas a mano')}</span>
