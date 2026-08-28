@@ -403,7 +403,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 27 ago 2026 · 22:13';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 27 ago 2026 · 22:34';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1421,6 +1421,14 @@ function vistaAjustes(){
         <input type="number" step="0.1" value="${esc(j.indice)}" onchange="setJug(${i},'indice',this.value)">
       </div>`;
     });
+    html+=`<p class="nota-txt">Con estos índices se calculan el neto y los puntos stableford de todos.</p>`;
+  }else{
+    /* los demás teléfonos ven el índice con el que corre su stableford */
+    html+=`<h2 class="sec">Índices del torneo</h2><div class="grupo">
+      ${S.jugadores.map(j=>`<div class="cuenta"><span>${esc(j.nombre)}</span><span>${esc(j.indice)}</span></div>`).join('')}
+    </div>
+    <p class="nota-txt">Con ese índice se calculan el neto y los puntos stableford de cada quien.
+    Los edita el teléfono de ${esc(corto(jug('j0')?jug('j0').nombre:'j0'))}.</p>`;
   }
   html+=`<h2 class="sec">Campos</h2>`;
   S.campos.forEach((c,d)=>{
