@@ -403,7 +403,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 28 ago 2026 · 09:48';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 28 ago 2026 · 09:55';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1223,9 +1223,6 @@ function vistaPresiones(){
           <span class="${v<0?'arr':(v>0?'aba':'')}" style="min-width:64px;text-align:center">${v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')}</span>
           <button class="bt" style="width:30px;height:30px;font-size:19px" onclick="ajustaVentaja(${d},'${rid}',1)">+</button>
         </span></div>`; }).join('')}
-    <p class="nota-txt" style="margin-top:6px">Las ventajas ruedan solas: la primera vez rige la lista y
-    de ahí en adelante, quien perdió el juego anterior recibe un golpe más la siguiente vez que se topen.
-    Si pactan otra cosa en el tee, ajústala con − y +: el pacto le gana a la regla solo ese día.</p>
     </div>`;
   $('v-presiones').innerHTML=`
     ${resumen}
