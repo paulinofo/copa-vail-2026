@@ -119,7 +119,11 @@ td.alto{color:var(--tinta-suave)}
 .pos-fila.lider .pos-n{color:var(--laton)}
 .pos-id{flex:1;min-width:0}
 .pos-rondas{font-family:var(--mono);font-size:12.5px;color:var(--tinta-suave);margin-top:2px;letter-spacing:.05em}
-.pos-tot{font-family:var(--mono);font-size:23px;font-weight:700;flex:none}
+.pos-tot{font-family:var(--mono);font-size:23px;font-weight:700;flex:none;min-width:48px;text-align:right}
+.pos-dias{display:flex;flex:none;gap:4px}
+.pos-dias b{width:28px;text-align:right;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--tinta-suave)}
+.pos-cab{display:flex;align-items:center;gap:11px;padding:0 13px;margin:0 0 6px}
+.pos-cab .pos-dias b,.pos-cab .pos-tot{font-size:10.5px;font-weight:600;color:var(--cal);letter-spacing:.03em;text-transform:uppercase}
 
 .grupo{background:var(--tarjeta);color:var(--tinta);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
 .grupo h3{margin:0 0 7px;font-family:var(--mono);font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;
@@ -398,7 +402,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 27 ago 2026 · 20:32';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 27 ago 2026 · 20:52';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -892,17 +896,31 @@ function vistaPos(){
   if(!lista.length){
     html+=`<p class="vacio-msg">Todavía no hay golpes capturados.<br>Empieza en la pestaña Hoy.</p>`;
   }else{
+    /* En Acumulado los puntos de cada día van en columnas alineadas (L24 · M25 · J27 · S29 · Total) */
+    if(modoPos==='total'){
+      const etiq=d=>{const p=String(S.campos[d].fecha).split(' ');return (p[0]||'D')[0]+(p[1]||d+1);};
+      html+=`<div class="pos-cab"><div class="pos-n"></div><div class="pos-id"></div>
+        <div class="pos-dias">${S.campos.map((c,d)=>`<b>${etiq(d)}</b>`).join('')}</div>
+        <div class="pos-tot">Total</div></div>`;
+    }
     lista.forEach((x,i)=>{
       const r=modoPos==='total'?x.t:x.r;
       const val=esStableford()?r.pts:(S.torneo.usarHcp?r.neto:r.bruto);
-      const det=modoPos==='total'
-        ? x.t.rondas.map(rr=>rr.jugados?(esStableford()?rr.pts:(S.torneo.usarHcp?rr.neto:rr.bruto)):'–').join('  ·  ')
-        : `${r.jugados} hoyos · hcp ${r.ch}`;
-      html+=`<div class="pos-fila ${i===0?'lider':''}">
-        <div class="pos-n">${i+1}</div>
-        <div class="pos-id"><div class="jug-nom">${esc(x.j.nombre)}</div><div class="pos-rondas">${det}</div></div>
-        <div class="pos-tot">${val}${esStableford()?'<span style="font-size:14px"> p</span>':''}</div>
-      </div>`;
+      if(modoPos==='total'){
+        const cols=x.t.rondas.map(rr=>`<b>${rr.jugados?(esStableford()?rr.pts:(S.torneo.usarHcp?rr.neto:rr.bruto)):'–'}</b>`).join('');
+        html+=`<div class="pos-fila ${i===0?'lider':''}">
+          <div class="pos-n">${i+1}</div>
+          <div class="pos-id"><div class="jug-nom">${esc(x.j.nombre)}</div></div>
+          <div class="pos-dias">${cols}</div>
+          <div class="pos-tot">${val}${esStableford()?'<span style="font-size:14px"> p</span>':''}</div>
+        </div>`;
+      }else{
+        html+=`<div class="pos-fila ${i===0?'lider':''}">
+          <div class="pos-n">${i+1}</div>
+          <div class="pos-id"><div class="jug-nom">${esc(x.j.nombre)}</div><div class="pos-rondas">${r.jugados} hoyos · hcp ${r.ch}</div></div>
+          <div class="pos-tot">${val}${esStableford()?'<span style="font-size:14px"> p</span>':''}</div>
+        </div>`;
+      }
     });
     html+=`<p class="nota-txt">${esStableford()
       ?'Stableford: gana quien acumula más puntos. Par neto = 2, birdie = 3, eagle = 4, bogey = 1.'
