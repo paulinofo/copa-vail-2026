@@ -403,7 +403,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 27 ago 2026 · 21:21';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 27 ago 2026 · 21:46';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -899,8 +899,8 @@ function vistaPos(){
   }).filter(x=>x.r.jugados>0).sort((a,b)=>a.orden-b.orden);
 
   let html=`<div class="segm pos-segm">
-    <button class="${dSel===null?'on':''}" style="flex:1.5" onclick="setPos('total')">Acumulado</button>
     ${jugados.map(d=>`<button class="${dSel===d?'on':''}" onclick="setPos(${d})">${etiq(d)}</button>`).join('')}
+    <button class="${dSel===null?'on':''}" style="flex:1.5" onclick="setPos('total')">Acumulado</button>
   </div>`;
   if(!lista.length){
     html+=`<p class="vacio-msg">Todavía no hay golpes capturados.<br>Empieza en la pestaña Hoy.</p>`;
