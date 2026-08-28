@@ -153,6 +153,7 @@ input:focus,select:focus{outline:2px solid var(--laton);outline-offset:1px}
 .segm{display:flex;gap:5px;background:var(--verde);border-radius:9px;padding:4px;margin-bottom:11px}
 .segm button{flex:1;padding:9px 6px;border-radius:6px;font-size:15.5px;font-weight:600;color:var(--cal)}
 .segm button.on{background:var(--tarjeta);color:var(--verde-hondo)}
+.segm.pos-segm button{font-size:14px;padding:9px 4px}
 .btn{display:block;width:100%;padding:13px;border-radius:9px;background:var(--laton);color:var(--verde-hondo);
   font-weight:700;font-size:17px;margin-top:9px}
 .btn.sec{background:transparent;border:1px solid var(--verde-linea);color:var(--tarjeta)}
@@ -402,7 +403,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 27 ago 2026 · 20:52';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 27 ago 2026 · 21:21';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -882,31 +883,38 @@ function ligaScrollTarjeta(){
 }
 
 /* ---------- Posiciones ---------- */
-let modoPos='total';
+let modoPos='total';   // 'total' o el número del día elegido
 function vistaPos(){
+  const etiq=d=>{const p=String(S.campos[d].fecha).split(' ');return (p[0]||'D')[0]+(p[1]||d+1);};
+  /* pestañas: Acumulado + una por cada día que ya tiene golpes capturados */
+  const jugados=Array.from({length:DIAS},(_,d)=>d).filter(d=>{
+    const r=S.scores['d'+d];
+    return r&&Object.values(r).some(a=>(a||[]).some(v=>v!==null&&v!==undefined));
+  });
+  if(modoPos!=='total'&&!jugados.includes(modoPos)) modoPos='total';
+  const dSel=modoPos==='total'?null:modoPos;
   const lista=S.jugadores.map(j=>{
-    const t=resumenTotal(j.id), r=resumenRonda(S.diaActivo,j.id);
-    return {j,t,r,orden: modoPos==='total'?valorOrden(t):valorOrden(r)};
-  }).filter(x=>modoPos==='total'?x.t.jugados>0:x.r.jugados>0).sort((a,b)=>a.orden-b.orden);
+    const t=resumenTotal(j.id), r=dSel===null?t:resumenRonda(dSel,j.id);
+    return {j,t,r,orden:valorOrden(r)};
+  }).filter(x=>x.r.jugados>0).sort((a,b)=>a.orden-b.orden);
 
-  let html=`<div class="segm">
-    <button class="${modoPos==='total'?'on':''}" onclick="setPos('total')">Acumulado</button>
-    <button class="${modoPos==='dia'?'on':''}" onclick="setPos('dia')">${esc(S.campos[S.diaActivo].fecha)}</button>
+  let html=`<div class="segm pos-segm">
+    <button class="${dSel===null?'on':''}" style="flex:1.5" onclick="setPos('total')">Acumulado</button>
+    ${jugados.map(d=>`<button class="${dSel===d?'on':''}" onclick="setPos(${d})">${etiq(d)}</button>`).join('')}
   </div>`;
   if(!lista.length){
     html+=`<p class="vacio-msg">Todavía no hay golpes capturados.<br>Empieza en la pestaña Hoy.</p>`;
   }else{
     /* En Acumulado los puntos de cada día van en columnas alineadas (L24 · M25 · J27 · S29 · Total) */
-    if(modoPos==='total'){
-      const etiq=d=>{const p=String(S.campos[d].fecha).split(' ');return (p[0]||'D')[0]+(p[1]||d+1);};
+    if(dSel===null){
       html+=`<div class="pos-cab"><div class="pos-n"></div><div class="pos-id"></div>
         <div class="pos-dias">${S.campos.map((c,d)=>`<b>${etiq(d)}</b>`).join('')}</div>
         <div class="pos-tot">Total</div></div>`;
     }
     lista.forEach((x,i)=>{
-      const r=modoPos==='total'?x.t:x.r;
+      const r=x.r;
       const val=esStableford()?r.pts:(S.torneo.usarHcp?r.neto:r.bruto);
-      if(modoPos==='total'){
+      if(dSel===null){
         const cols=x.t.rondas.map(rr=>`<b>${rr.jugados?(esStableford()?rr.pts:(S.torneo.usarHcp?rr.neto:rr.bruto)):'–'}</b>`).join('');
         html+=`<div class="pos-fila ${i===0?'lider':''}">
           <div class="pos-n">${i+1}</div>
