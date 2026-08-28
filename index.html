@@ -403,7 +403,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 6;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v6 · 27 ago 2026 · 21:46';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v6 · 27 ago 2026 · 22:13';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -791,8 +791,8 @@ function vistaHoy(){
     html+=`<div class="grupo ph"><h3>Presiones <span>en ${etNueve}, tras el ${h+1}</span></h3>
       ${filasPH}</div>${tee1}`;
   }
-  html+=`<div class="barra-prog"><i style="width:${(hechos/(8*HOYOS)*100).toFixed(1)}%"></i></div>
-    <p class="nota-txt">${hechos} de 144 golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
+  html+=`<div class="barra-prog"><i style="width:${(hechos/(NJUG*HOYOS)*100).toFixed(1)}%"></i></div>
+    <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
     y toca el número para borrar el hoyo.</p>`;
   if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
@@ -989,8 +989,15 @@ function idxLista(nombre){
 function valorLista(jid){ const i=idxLista(jug(jid).nombre);
   if(i<0) return jid===YO() ? 0 : null;   // tu propio renglón ausente cuenta como 0
   return (parseInt(S.lista[i].v,10)||0); }
-/* Golpes que 'a' le da a 'b' según la lista: la diferencia entre sus valores. */
-function slidingLista(a,b){ const va=valorLista(a), vb=valorLista(b);
+/* Golpes dictados por pareja ('ja|jb' ordenado: los que el primero le da al
+   segundo; negativo = los recibe). Vacío aquí: rige la lista. */
+const SLIDING_PAREJAS = {};
+/* Golpes que 'a' le da a 'b': el pacto de la pareja si existe;
+   si no, la diferencia de valores de la lista. */
+function slidingLista(a,b){
+  const o=[a,b].slice().sort(), k=o.join('|');
+  if(k in SLIDING_PAREJAS){ const v=SLIDING_PAREJAS[k]; return o[0]===a?v:-v; }
+  const va=valorLista(a), vb=valorLista(b);
   return (va===null||vb===null)?null:(vb-va); }
 function setLista(i,campo,val){
   if(campo==='v') S.lista[i].v=Math.max(-36,Math.min(36,parseInt(val,10)||0));
@@ -1296,7 +1303,7 @@ function seccionSliding(){
      destacados en dorado --- */
   const gHoy=(S.grupos[S.diaActivo]||[]).find(x=>x.includes(YO()));
   const hoyRiv=new Set(gHoy?gHoy.filter(id=>id!==YO()):[]);
-  const etDia=['L','M','J','S'];
+  const etDia=S.campos.map(c=>String(c.fecha||' ')[0]);
   const diasCon=j2=>{
     const t=[];
     for(let d2=0;d2<DIAS;d2++){
