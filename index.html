@@ -408,7 +408,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 22:55';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 23:06';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1146,8 +1146,9 @@ function valorLista(jid){ const i=idxLista(jug(jid).nombre);
   if(i<0) return jid===YO() ? 0 : null;   // tu propio renglón ausente cuenta como 0
   return (parseInt(S.lista[i].v,10)||0); }
 /* Golpes dictados por pareja ('ja|jb' ordenado: los que el primero le da al
-   segundo; negativo = los recibe). Vacío aquí: rige la lista. */
-const SLIDING_PAREJAS = {};
+   segundo; negativo = los recibe). Le ganan a la diferencia de la lista;
+   un pacto del tee les gana a ellos, solo ese día. */
+const SLIDING_PAREJAS = { 'j0|j2':-9 };   /* Alfredo le da 9 a Paulino */
 /* Golpes que 'a' le da a 'b': el pacto de la pareja si existe;
    si no, la diferencia de valores de la lista. */
 function slidingLista(a,b){
