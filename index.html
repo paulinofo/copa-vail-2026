@@ -85,10 +85,11 @@ h2.sec:first-child{margin-top:2px}
 .marcador{min-width:58px;height:50px;display:grid;place-items:center;font-family:var(--mono);font-size:28px;font-weight:700}
 .marcador.vacio{color:#B9AF97;font-size:21px}
 .pts{font-family:var(--mono);font-size:13px;font-weight:700;min-width:30px;text-align:right;color:var(--tinta-suave);flex:none}
-.xtras{display:flex;gap:5px;margin-top:3px}
+.xtras{display:flex;gap:5px;margin-top:2px;min-height:21px;align-items:center}
 .xtra{font-family:var(--mono);font-size:11px;letter-spacing:.02em;padding:2px 7px;border-radius:99px;
   border:1px solid var(--tarjeta-linea);color:var(--tinta-suave);background:transparent}
 .xtra.on{background:var(--laton);border-color:var(--laton);color:var(--verde-hondo);font-weight:700}
+.xtra:disabled{opacity:.28}
 sup.xmk{font-size:8.5px;color:var(--laton);font-weight:700;margin-left:1px}
 
 /* Notación de tarjeta */
@@ -408,7 +409,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 23:18';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 23:31';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -899,13 +900,15 @@ function vistaHoy(){
     const neto=g===null?null:g-gp;
     const pts=neto===null?null:puntosStableford(neto,c.par[h]);
     const x=extraDe(d,jid,h);
-    const chips=(((g!==null&&g<=c.par[h])||(x&1))?`<button class="xtra ${x&1?'on':''}" onclick="toggleExtra('${jid}',1)">🏖️ sandy</button>`:'')
+    /* los chips se dibujan siempre: el renglón mide igual con y sin unidades */
+    const sandyOk=(g!==null&&g<=c.par[h])||(x&1);
+    const chips=`<button class="xtra ${x&1?'on':''}"${sandyOk?'':' disabled'} onclick="toggleExtra('${jid}',1)">🏖️ sandy</button>`
       +(c.par[h]===3?`<button class="xtra ${x&2?'on':''}" onclick="toggleExtra('${jid}',2)">🎯 oyes</button>`:'');
     html+=`<div class="jug-fila">
       <div class="jug-id">
         <div class="jug-nom">${esc(j.nombre)}${gp>0?' <span style="color:var(--bandera);font-family:var(--mono);font-size:13px">'+'•'.repeat(Math.min(gp,3))+'</span>':''}</div>
         <div class="jug-sub">HCP ${ch}${g!==null?' · neto '+neto:''}</div>
-        ${chips?`<div class="xtras">${chips}</div>`:''}
+        <div class="xtras">${chips}</div>
       </div>
       <div class="golpe">
         <button class="bt" onclick="cambiaGolpe('${jid}',-1)">−</button>
