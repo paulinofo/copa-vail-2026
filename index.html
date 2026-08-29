@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 29 ago 2026 · 07:23';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 29 ago 2026 · 07:37';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1434,8 +1434,8 @@ function vistaPresiones(){
         </span></div>`; }).join('')}
     </div>`;
   $('v-presiones').innerHTML=`
-    ${resumen}
     <div class="segm">${segm}</div>
+    ${resumen}
     <div class="scroll-x"><table class="card">
       <thead><tr>${th}</tr></thead>
       <tbody><tr class="par">${fp}</tr>${filaG(mi,'Tú')}${filaG(presRival,nomR)}</tbody>
