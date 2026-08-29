@@ -416,8 +416,8 @@ try{
    1. DATOS DEL TORNEO
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
-const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 29 ago 2026 · 07:43';   // lo sella el script de despliegue en cada publicación
+const VERSION = 8;   // sube al cambiar datos base: dispara migrar()
+const ACTUALIZADA='v8 · 29 ago 2026 · 15:56';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -459,9 +459,10 @@ const CAMPOS = [
     si :[7,5,13,11,9,1,15,17,3, 16,4,14,8,6,18,2,10,12] },
 
   { nombre:'EagleVail Golf Club', sede:'459 Eagle Dr, Eagle-Vail', fecha:'Sáb 29 ago',
-    iso:'2026-08-29', salidas:['09:00','09:10'], tee:'Blue 6540', rating:70.7, slope:133, verificado:true,
+    iso:'2026-08-29', salidas:['09:00','09:10'], tee:'Blue 6538', rating:70.7, slope:133, verificado:true,
+    /* par y SI cotejados contra la tarjeta física el sáb 29 (tres fotos coinciden) */
     par:[5,4,4,3,4,4,4,3,4, 3,5,4,3,5,4,4,3,5],
-    si :[9,3,11,13,15,17,5,7,1, 18,4,12,14,10,2,8,16,6] }
+    si :[9,3,11,15,7,5,13,17,1, 18,4,12,14,10,2,8,16,6] }
 ];
 
 /* --- VER EL TORNEO EN VIVO (opcional) ---
@@ -2296,7 +2297,10 @@ const SEMILLAS = [
   /* mar 25 · Fazio, grupo 2 (Paulino/Paco/Ramón/Vic), del teléfono de Paulino */
   'PI26.1.j0:575776587367556659,j1:5A656546457A665728,j5:584577654375775565,j6:65558556467645846A',
   /* jue 27 · Vail GC, los dos grupos, dictado por Paulino de las tarjetas */
-  'PI26.2.j0:665775478556665545,j1:864667487687776656,j2:576557355465653645,j3:553657454557555536,j4:643576375476553465,j5:585769374546663436,j6:734448375786873626,j7:562656475446553524'
+  'PI26.2.j0:665775478556665545,j1:864667487687776656,j2:576557355465653645,j3:553657454557555536,j4:643576375476553465,j5:585769374546663436,j6:734448375786873626,j7:562656475446553524',
+  /* sáb 29 · EagleVail, grupo 1 (Paco/Javier/JC/Ramón), de sus tarjetas de papel;
+     el grupo 2 se capturó en vivo y viaja por el servidor/estado-pub */
+  'PI26.3.j1:868775737455576747,j3:556357535555464537,j4:655446645468464547,j5:553555535689555846'
 ];
 const SEMILLA_TS = Date.UTC(2026,7,25);      // cierre del lun 24 ago
 function sembrar(){
