@@ -416,7 +416,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 23:47';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 23:58';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -752,6 +752,11 @@ function dineroConBasura(d,a,b){
 }
 
 /* ---------- Parejas: mejor bola 2v2, fijas los 18, 5-5-10 ----------
+   OJO, aquí la cuenta es distinta a las presiones individuales: suma la
+   DIFERENCIA DE GOLPES entre las dos mejores bolas (si ellos hacen 4 y
+   nosotros 6, son 2 puntos de un golpe), y cada apuesta abre su presión
+   al llegar a 2 — que a su vez abre la suya, así que en la práctica sale
+   una presión por cada dos puntos.
    La ventaja se pacta POR PAREJA en el tee (v: + = la pareja 1 le da
    a la 2; cae por dificultad) y el dinero del match se DIVIDE entre
    los dos integrantes. Config por teléfono, como los pactos del
@@ -796,7 +801,7 @@ function matchParejas(d,hasta){
       for(let h=ini;h<=Math.min(fin,hasta);h++){
         const na=neto(pa,h), nb=neto(pb,h);
         if(na===null||nb===null) continue;
-        const r=na<nb?1:(na>nb?-1:0);
+        const r=nb-na;                      // puntos: la diferencia de golpes
         aps.forEach(ap=>{ if(h>=ap.ini) ap.st+=r; });
         const nuevas=[];
         aps.forEach(ap=>{ if(!ap.p&&Math.abs(ap.st)>=2&&h>=ap.ini&&h<fin){
@@ -844,7 +849,8 @@ function seccionParejas(d){
       <span class="${dinero>0?'arr':(dinero<0?'aba':'')}">${dinero===0?'—':sg2(dinero)}</span></div>
     <div class="cuenta total"><span>${dinero<0?'Pagan':(dinero>0?'Cobran':'Tablas')} · por cabeza</span>
       <span>${dinero===0?'—':(mitad%1?mitad.toFixed(1):mitad)}</span></div>
-    <p class="nota-txt" style="margin-top:6px">Mejor bola de cada pareja; presión automática al ir 2 abajo.
+    <p class="nota-txt" style="margin-top:6px">Mejor bola de cada pareja, contando la diferencia de golpes:
+    ganar un hoyo por dos vale dos. Cada apuesta abre presión al llegar a 2.
     La pareja y la ventaja se pactan en el tee y viven en este teléfono.</p>
   </div>`;
 }
