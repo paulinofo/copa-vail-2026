@@ -416,7 +416,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 23:38';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 23:47';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -772,7 +772,8 @@ function ajustaVentajaParejas(n){
   c.v=Math.max(-36,Math.min(36,(c.v|0)+n));
   guardar(); render();
 }
-function matchParejas(d){
+function matchParejas(d,hasta){
+  if(hasta===undefined) hasta=17;
   try{
     const gs=S.grupos[d]||[];
     const g=gs.find(z=>z.includes(YO()))||gs[0];
@@ -792,7 +793,7 @@ function matchParejas(d){
       let aps=[{et:nom+' · salida',ini,fin,st:0,p:false}];
       apuestas.push(aps[0]);
       let nPres=0;
-      for(let h=ini;h<=fin;h++){
+      for(let h=ini;h<=Math.min(fin,hasta);h++){
         const na=neto(pa,h), nb=neto(pb,h);
         if(na===null||nb===null) continue;
         const r=na<nb?1:(na>nb?-1:0);
@@ -943,23 +944,23 @@ function vistaHoy(){
       filasPH+=`<div class="ph-fila"><span class="ph-nom">${esc(corto(jug(rid).nombre))}</span>
         <span class="ph-m">${marc}</span></div>`;
     });
-    /* en el tee del 1: pactar los golpes del día */
-    let tee1='';
-    if(h===0){
-      const rivs=grupo.filter(id=>id!==MI);
-      const yaHay=rivs.some(rid=>slidingDe(d,MI,rid)!==0);
-      const prev=rivs.map(rid=>{ const v=slidingDe(d,MI,rid);
-        return esc(corto(jug(rid).nombre))+' '+(v<0?'te da '+(-v):(v>0?'le das '+v:'parejos')); }).join(' · ');
-      const falta=rivs.some(rid=>slidingLista(MI,rid)===null);
-      tee1=`<div class="tee1">
-        <div class="tee1-txt">${yaHay?'Golpes del día, según la regla o lo pactado.':'Salen parejos.'}
-          <span>${esc(prev)}</span>${falta?'<span class="aviso">falta alguien en la lista</span>':''}</div>
-        <div class="tee1-bt">
-          <button class="btn sec" onclick="dejarParejos(${d})">Parejos</button>
-        </div></div>`;
+    /* cómo va el foursome en el juego de parejas, en el nueve que se juega */
+    let bloqueParejas='';
+    const mp=matchParejas(d,h);
+    if(mp){
+      const nom2=par=>par.map(j2=>corto(jug(j2).nombre).split(' ')[0]).join(' y ');
+      const lado=mp.pa.includes(MI)?1:-1;
+      const mios=lado>0?mp.pa:mp.pb, suyos=lado>0?mp.pb:mp.pa;
+      const vivas=mp.apuestas.filter(a2=>a2.fin===nueveFin && a2.ini<=h);
+      const marcP=vivas.length
+        ? vivas.map(a2=>`<i class="${a2.st*lado>0?'arr':(a2.st*lado<0?'aba':'')}">${sg(a2.st*lado)}</i>`).join('')
+        : '<i>—</i>';
+      bloqueParejas=`<div class="grupo ph"><h3>Parejas <span>mejor bola, en ${etNueve}</span></h3>
+        <div class="ph-fila"><span class="ph-nom">${esc(nom2(mios))} vs ${esc(nom2(suyos))}</span>
+          <span class="ph-m">${marcP}</span></div></div>`;
     }
     html+=`<div class="grupo ph"><h3>Presiones <span>en ${etNueve}, tras el ${h+1}</span></h3>
-      ${filasPH}</div>${tee1}`;
+      ${filasPH}</div>${bloqueParejas}`;
   }
   html+=`<div class="barra-prog"><i style="width:${(hechos/(NJUG*HOYOS)*100).toFixed(1)}%"></i></div>
     <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
