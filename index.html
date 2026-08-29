@@ -51,6 +51,12 @@ header{position:sticky;top:0;z-index:30;background:var(--verde);
 .dia b{display:block;font-size:14.5px}
 .dia i{display:block;font-style:normal;font-family:var(--mono);font-size:11px;letter-spacing:.06em;opacity:.75}
 .dia.on{background:var(--tarjeta);color:var(--verde-hondo);border-color:var(--tarjeta)}
+.dia-resumen{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;
+  margin:9px 0 0;padding:0 0 10px;color:var(--tarjeta)}
+.dia-resumen b{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dia-resumen i{font-style:normal;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+  color:var(--cal);white-space:nowrap}
+.dia-resumen u{margin-left:auto;text-decoration:none;color:var(--laton);font-size:12px;flex:none}
 
 main{padding:14px 16px calc(84px + var(--safe-b));min-height:60vh}
 .vista{display:none}
@@ -382,6 +388,7 @@ table.card td.pcel{vertical-align:top;padding:5px 3px;min-width:34px}
       <div class="quien-soy" id="quienSoy"></div>
     </div>
   </div>
+  <button class="dia-resumen" id="diaResumen" onclick="toggleDias()"></button>
   <div class="dias" id="tabsDias"></div>
 </header>
 
@@ -409,7 +416,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 23:31';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 23:38';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -2347,7 +2354,10 @@ function pintarNav(){
     <svg viewBox="0 0 24 24">${v.svg}</svg>${v.et}</button>`).join('');
 }
 function setVista(v){ S.vista=v; guardar(); render(); }
-function setDia(d){ S.diaActivo=d; S.hoyoActivo=0; borrador=null; guardar(); render(); }
+/* la barra de campos arranca plegada: en el campo se agradece la pantalla */
+let diasAbierto=false;
+function toggleDias(){ diasAbierto=!diasAbierto; render(); }
+function setDia(d){ S.diaActivo=d; S.hoyoActivo=0; borrador=null; diasAbierto=false; guardar(); render(); }
 
 function render(){
   $('tituloTorneo').textContent=S.torneo.nombre;
@@ -2358,7 +2368,11 @@ function render(){
       <b>${esc(c.nombre)}</b><i>${esc(c.fecha)} · ${esc(c.salidas[0])}</i></button>`).join('');
   /* en Tabla los campos del encabezado estorban: la vista trae sus propias pestañas por día */
   const sinCampos=S.vista==='pos';
-  $('tabsDias').style.display=sinCampos?'none':'';
+  const cRes=S.campos[S.diaActivo];
+  $('diaResumen').innerHTML=`<b>${esc(cRes.nombre)}</b>`
+    +`<i>${esc(cRes.fecha)} · ${esc(cRes.salidas[0])}</i><u>${diasAbierto?'cerrar ▴':'cambiar ▾'}</u>`;
+  $('diaResumen').style.display=sinCampos?'none':'';
+  $('tabsDias').style.display=(sinCampos||!diasAbierto)?'none':'';
   $('cabecera').style.paddingBottom=sinCampos?'11px':'';
   VISTAS.forEach(v=>$('v-'+v.id).classList.toggle('on',S.vista===v.id));
   ({hoy:vistaHoy,grupos:vistaGrupos,tarjeta:vistaTarjeta,pos:vistaPos,presiones:vistaPresiones,ajustes:vistaAjustes})[S.vista]();
