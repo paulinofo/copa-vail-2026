@@ -408,7 +408,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 23:06';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 23:18';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -712,7 +712,14 @@ function fijarExtra(d,jid,h,bits,tRemoto){
   guardar();
 }
 function toggleExtra(jid,bit){
-  fijarExtra(S.diaActivo,jid,S.hoyoActivo,extraDe(S.diaActivo,jid,S.hoyoActivo)^bit);
+  const d=S.diaActivo, h=S.hoyoActivo, x=extraDe(d,jid,h);
+  /* el oyes es de uno solo —el más cercano—: al marcarlo se lo quita a los
+     demás de su grupo; el otro foursome lleva el suyo en el mismo hoyo */
+  if(bit===2 && !(x&2)){
+    const g=(S.grupos[d]||[]).find(z=>z.includes(jid))||[];
+    g.forEach(o=>{ const xo=extraDe(d,o,h); if(o!==jid && (xo&2)) fijarExtra(d,o,h,xo&~2); });
+  }
+  fijarExtra(d,jid,h,x^bit);
   render();
 }
 function unidadesRonda(d,jid){
@@ -947,7 +954,7 @@ function vistaHoy(){
   html+=`<div class="barra-prog"><i style="width:${(hechos/(NJUG*HOYOS)*100).toFixed(1)}%"></i></div>
     <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
     y toca el número para borrar el hoyo. La basura a $1: 🏖️ sandy (par desde la arena)
-    y 🎯 oyes (green de un tiro en los pares 3).</p>`;
+    y 🎯 oyes (el más cercano al hoyo de un tiro en los pares 3; es de uno solo).</p>`;
   if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
 }
