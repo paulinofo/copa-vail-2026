@@ -97,6 +97,7 @@ h2.sec:first-child{margin-top:2px}
 .xtra.on{background:var(--laton);border-color:var(--laton);color:var(--verde-hondo);font-weight:700}
 .xtra:disabled{opacity:.28}
 sup.xmk{font-size:8.5px;color:var(--laton);font-weight:700;margin-left:1px}
+sup.xmk.seg{color:var(--tinta-suave);font-weight:400}
 
 /* Notación de tarjeta */
 .nota{display:inline-grid;place-items:center;width:34px;height:34px;position:relative}
@@ -416,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 23:58';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 29 ago 2026 · 00:12';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -701,7 +702,10 @@ const puntosStableford=(neto,par)=>Math.max(0,2-(neto-par));
    $1 la unidad; se paga la diferencia contra cada rival del grupo.
    Viajan como celdas con jid 'jN.x' (los clientes viejos las ignoran). */
 const VALOR_UNIDAD = 1;
-function extraDe(d,jid,h){ return ((S.extras||{})[d+'.'+jid+'.'+h])|0; }   // bits: 1 sandy · 2 oyes
+function extraDe(d,jid,h){ return ((S.extras||{})[d+'.'+jid+'.'+h])|0; }   // bit0 sandy · bit1 1º del oyes · bits2-4 posición
+/* posición en el oyes: 1 = el más cercano. Los datos viejos solo traían el
+   bit del ganador, así que valen como 1º. */
+function ordenOyes(d,jid,h){ const x=extraDe(d,jid,h), n=(x>>2)&7; return n||((x&2)?1:0); }
 function fijarExtra(d,jid,h,bits,tRemoto){
   if(!S.extras) S.extras={};
   const llave=d+'.'+jid+'.'+h; bits=bits|0;
@@ -720,14 +724,24 @@ function fijarExtra(d,jid,h,bits,tRemoto){
   guardar();
 }
 function toggleExtra(jid,bit){
-  const d=S.diaActivo, h=S.hoyoActivo, x=extraDe(d,jid,h);
-  /* el oyes es de uno solo —el más cercano—: al marcarlo se lo quita a los
-     demás de su grupo; el otro foursome lleva el suyo en el mismo hoyo */
-  if(bit===2 && !(x&2)){
-    const g=(S.grupos[d]||[]).find(z=>z.includes(jid))||[];
-    g.forEach(o=>{ const xo=extraDe(d,o,h); if(o!==jid && (xo&2)) fijarExtra(d,o,h,xo&~2); });
-  }
-  fijarExtra(d,jid,h,x^bit);
+  const d=S.diaActivo, h=S.hoyoActivo;
+  fijarExtra(d,jid,h,extraDe(d,jid,h)^bit);
+  render();
+}
+/* Oyes por orden de cercanía: cada toque mete al jugador al final de la
+   fila (1º, 2º, 3º…) y tocarlo de nuevo lo saca y renumera a los demás.
+   La unidad se la lleva el 1º; el otro foursome lleva su propia fila. */
+function cicloOyes(jid){
+  const d=S.diaActivo, h=S.hoyoActivo;
+  const g=(S.grupos[d]||[]).find(z=>z.includes(jid))||[jid];
+  let fila=g.filter(o=>ordenOyes(d,o,h)>0).sort((a,b)=>ordenOyes(d,a,h)-ordenOyes(d,b,h));
+  if(ordenOyes(d,jid,h)>0) fila=fila.filter(o=>o!==jid);
+  else fila.push(jid);
+  g.forEach(o=>{
+    const pos=fila.indexOf(o)+1, x=extraDe(d,o,h);
+    const nuevo=(x&1)|(pos===1?2:0)|(pos<<2);
+    if(nuevo!==x) fijarExtra(d,o,h,nuevo);
+  });
   render();
 }
 function unidadesRonda(d,jid){
@@ -917,7 +931,8 @@ function vistaHoy(){
     /* los chips se dibujan siempre: el renglón mide igual con y sin unidades */
     const sandyOk=(g!==null&&g<=c.par[h])||(x&1);
     const chips=`<button class="xtra ${x&1?'on':''}"${sandyOk?'':' disabled'} onclick="toggleExtra('${jid}',1)">🏖️ sandy</button>`
-      +(c.par[h]===3?`<button class="xtra ${x&2?'on':''}" onclick="toggleExtra('${jid}',2)">🎯 oyes</button>`:'');
+      +(c.par[h]===3?(()=>{ const pos=ordenOyes(d,jid,h);
+          return `<button class="xtra ${pos===1?'on':''}" onclick="cicloOyes('${jid}')">🎯 ${pos?pos+'º':'oyes'}</button>`; })():'');
     html+=`<div class="jug-fila">
       <div class="jug-id">
         <div class="jug-nom">${esc(j.nombre)}${gp>0?' <span style="color:var(--bandera);font-family:var(--mono);font-size:13px">'+'•'.repeat(Math.min(gp,3))+'</span>':''}</div>
@@ -971,7 +986,7 @@ function vistaHoy(){
   html+=`<div class="barra-prog"><i style="width:${(hechos/(NJUG*HOYOS)*100).toFixed(1)}%"></i></div>
     <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
     y toca el número para borrar el hoyo. La basura a $1: 🏖️ sandy (par desde la arena)
-    y 🎯 oyes (el más cercano al hoyo de un tiro en los pares 3; es de uno solo).</p>`;
+    y 🎯 oyes (en los pares 3, toca en orden de cercanía al hoyo: cobra el 1º).</p>`;
   if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
 }
@@ -1010,13 +1025,13 @@ function vistaTarjeta(){
     let fq=`<td class="nom">${esc(corto(j.nombre))}<span class="ch">${ch}</span></td>`, po=0, pi=0;
     for(let h=0;h<9;h++){ const g=scoreDe(d,jid,h); if(g!==null) so+=g;
       const xm=extraDe(d,jid,h);
-      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}${(xm&1)&&g!==null&&g<=c.par[h]?'<sup class="xmk">S</sup>':''}${xm&2?'<sup class="xmk">O</sup>':''}</td>`;
+      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}${(xm&1)&&g!==null&&g<=c.par[h]?'<sup class="xmk">S</sup>':''}${(()=>{const oo=ordenOyes(d,jid,h);return oo?'<sup class="xmk'+(oo>1?' seg':'')+'">O'+'¹²³⁴⁵⁶⁷'[oo-1]+'</sup>':'';})()}</td>`;
       const q=g===null?null:puntosStableford(g-golpesEnHoyo(ch,c.si[h]),c.par[h]); if(q!==null) po+=q;
       fq+=`<td class="${q===null?'':(q>=3?'bajo':(q===0?'alto':''))}">${q??'·'}</td>`; }
     f+=`<td class="tot">${so||'·'}</td>`; fq+=`<td class="tot">${po||'·'}</td>`;
     for(let h=9;h<18;h++){ const g=scoreDe(d,jid,h); if(g!==null) si_+=g;
       const xm=extraDe(d,jid,h);
-      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}${(xm&1)&&g!==null&&g<=c.par[h]?'<sup class="xmk">S</sup>':''}${xm&2?'<sup class="xmk">O</sup>':''}</td>`;
+      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}${(xm&1)&&g!==null&&g<=c.par[h]?'<sup class="xmk">S</sup>':''}${(()=>{const oo=ordenOyes(d,jid,h);return oo?'<sup class="xmk'+(oo>1?' seg':'')+'">O'+'¹²³⁴⁵⁶⁷'[oo-1]+'</sup>':'';})()}</td>`;
       const q=g===null?null:puntosStableford(g-golpesEnHoyo(ch,c.si[h]),c.par[h]); if(q!==null) pi+=q;
       fq+=`<td class="${q===null?'':(q>=3?'bajo':(q===0?'alto':''))}">${q??'·'}</td>`; }
     f+=`<td class="tot">${si_||'·'}</td><td class="tot">${(so+si_)||'·'}</td>`;
