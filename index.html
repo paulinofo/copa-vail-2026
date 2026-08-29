@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 29 ago 2026 · 07:37';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 29 ago 2026 · 07:43';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1355,6 +1355,32 @@ function ligaScrollPresiones(){
       els.forEach(o=>{ if(o!==el && Math.abs(o.scrollLeft-presScrollX)>1) o.scrollLeft=presScrollX; }); };
   });
 }
+/* Cómo va el foursome completo, sin cambiar de rival: por cada uno, los
+   marcadores vivos de la ida y de la vuelta y el dinero del día (con basura).
+   La tabla de arriba sigue siendo el detalle del rival elegido. */
+function seccionFoursome(d,mi){
+  try{
+    const g=(S.grupos[d]||[]).find(x=>x.includes(mi)); if(!g) return '';
+    const riv=g.filter(id=>id!==mi); if(riv.length<2) return '';
+    const sg=v=>v>0?'+'+v:(v<0?''+v:'0');
+    const marc=aps=>aps.length
+      ? aps.map(a=>`<i class="${a.st>0?'arr':(a.st<0?'aba':'')}">${sg(a.st)}</i>`).join('')
+      : '<i>—</i>';
+    const filas=riv.map(rid=>{
+      const m=presionesMatch(d,mi,rid);
+      const din=dineroConBasura(d,mi,rid);
+      /* día sin capturar: un guion limpio en vez de ceros que no dicen nada */
+      const vivo=din!==null;
+      return `<div class="ph-fila" style="flex-wrap:wrap">
+        <span class="ph-nom">${esc(corto(jug(rid).nombre))}</span>
+        <span class="ph-m">${vivo?marc(m.apuestas.filter(a=>a.fin===8)):'<i>—</i>'}</span>
+        <span class="ph-m" style="opacity:.75">${vivo?marc(m.apuestas.filter(a=>a.fin===17)):''}</span>
+        <span class="ph-d ${din>0?'arr':(din<0?'aba':'')}">${din===null?'—':sg(din)}</span></div>`;
+    }).join('');
+    return `<div class="grupo ph" style="margin-top:10px">
+      <h3>Presiones del foursome <span>ida · vuelta · del día</span></h3>${filas}</div>`;
+  }catch(e){ return ''; }
+}
 function vistaPresiones(){
   const d=S.diaActivo, c=S.campos[d], mi=YO();
   const miGrupo=S.grupos[d].find(g=>g.includes(mi))||S.grupos[d][0];
@@ -1445,6 +1471,7 @@ function vistaPresiones(){
       <thead><tr>${th}</tr></thead>
       <tbody>${filasP}<tr class="u-fila">${fu}</tr></tbody>
     </table></div>
+    ${seccionFoursome(d,mi)}
     <div class="grupo" style="margin-top:10px"><h3>Cuenta</h3>
       <div class="cuenta"><span>Ida · ${ida.length} presi${ida.length===1?'ón':'ones'} × ${VALOR_IDA}
         <b style="color:var(--tinta)">(${m.porNueve[0]>0?'ganas '+m.porNueve[0]:(m.porNueve[0]<0?'pierdes '+(-m.porNueve[0]):'tablas')})</b></span>
