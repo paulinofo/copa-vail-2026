@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 29 ago 2026 · 00:30';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 29 ago 2026 · 07:06';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1458,6 +1458,8 @@ function vistaPresiones(){
       <div class="cuenta total"><span>${dineroTotal<0?'Pagas':(dineroTotal>0?'Cobras':'Tablas')}</span>
         <span>${dineroTotal===0?'—':Math.abs(dineroTotal)}</span></div>
     </div>
+    ${seccionParejas(d)}
+    ${seccionSliding()}
     ${(()=>{ const q=cuentaPresiones();
       /* los 4 campos siempre: los jugados con su dinero y el acumulado,
          los que faltan con tus rivales y "por jugar" */
@@ -1483,9 +1485,7 @@ function vistaPresiones(){
         ${dias}
         <div class="cuenta total"><span>${q.gran<0?'Vas pagando':(q.gran>0?'Vas cobrando':'Vas a mano')}</span>
           <span>${q.gran===0?'—':Math.abs(q.gran)}</span></div>
-        ${riv?`<div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}`:''}</div>`; })()}
-    ${seccionParejas(d)}
-    ${seccionSliding()}`;
+        ${riv?`<div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}`:''}</div>`; })()}`;
   ligaScrollPresiones();
 }
 function setSlidingMio(d,rid,v){ setSliding(d,YO(),rid, -(parseInt(v,10)||0)); }
