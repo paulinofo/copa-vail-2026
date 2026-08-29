@@ -408,7 +408,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 22:30';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 22:55';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -735,6 +735,104 @@ function dineroConBasura(d,a,b){
   const m=dineroMatch(d,a,b); if(m===null) return null;
   return m + (unidadesRonda(d,a).total-unidadesRonda(d,b).total)*VALOR_UNIDAD;
 }
+
+/* ---------- Parejas: mejor bola 2v2, fijas los 18, 5-5-10 ----------
+   La ventaja se pacta POR PAREJA en el tee (v: + = la pareja 1 le da
+   a la 2; cae por dificultad) y el dinero del match se DIVIDE entre
+   los dos integrantes. Config por teléfono, como los pactos del
+   sliding. Solo aparece en grupos de 4. */
+function cfgParejas(d){
+  if(!S.parejas) S.parejas={};
+  if(!S.parejas[d]) S.parejas[d]={sel:0,v:0};
+  return S.parejas[d];
+}
+function particiones(g){
+  return [[[g[0],g[1]],[g[2],g[3]]],
+          [[g[0],g[2]],[g[1],g[3]]],
+          [[g[0],g[3]],[g[1],g[2]]]];
+}
+function setParejaSel(i){ cfgParejas(S.diaActivo).sel=i|0; guardar(); render(); }
+function ajustaVentajaParejas(n){
+  const c=cfgParejas(S.diaActivo);
+  c.v=Math.max(-36,Math.min(36,(c.v|0)+n));
+  guardar(); render();
+}
+function matchParejas(d){
+  try{
+    const gs=S.grupos[d]||[];
+    const g=gs.find(z=>z.includes(YO()))||gs[0];
+    if(!g||g.length!==4) return null;
+    const cfg=cfgParejas(d), c=S.campos[d];
+    const par2=particiones(g)[cfg.sel|0]||particiones(g)[0];
+    const pa=par2[0], pb=par2[1];
+    const mejor=(par,h)=>{ let m=null;
+      for(const jid of par){ const v2=scoreDe(d,jid,h); if(v2!==null&&(m===null||v2<m)) m=v2; }
+      return m; };
+    const v=cfg.v|0;
+    const neto=(par,h)=>{ const m=mejor(par,h); if(m===null) return null;
+      const recibe=(par===pa)?(v<0?-v:0):(v>0?v:0);
+      return m-(recibe?golpesEnHoyo(recibe,c.si[h]):0); };
+    const apuestas=[]; const porNueve=[];
+    [[0,8,'Ida'],[9,17,'Vuelta']].forEach(([ini,fin,nom])=>{
+      let aps=[{et:nom+' · salida',ini,fin,st:0,p:false}];
+      apuestas.push(aps[0]);
+      let nPres=0;
+      for(let h=ini;h<=fin;h++){
+        const na=neto(pa,h), nb=neto(pb,h);
+        if(na===null||nb===null) continue;
+        const r=na<nb?1:(na>nb?-1:0);
+        aps.forEach(ap=>{ if(h>=ap.ini) ap.st+=r; });
+        const nuevas=[];
+        aps.forEach(ap=>{ if(!ap.p&&Math.abs(ap.st)>=2&&h>=ap.ini&&h<fin){
+          ap.p=true; nPres++;
+          nuevas.push({et:nom+' · presión '+nPres,ini:h+1,fin,st:0,p:false}); } });
+        aps=aps.concat(nuevas); nuevas.forEach(x=>apuestas.push(x));
+      }
+      porNueve.push(aps.reduce((t,ap)=>t+(ap.st>0?1:(ap.st<0?-1:0)),0));
+    });
+    return {pa,pb,apuestas,porNueve};
+  }catch(e){ return null; }
+}
+function seccionParejas(d){
+  const m=matchParejas(d);
+  if(!m) return '';
+  const cfg=cfgParejas(d);
+  const g=(S.grupos[d]||[]).find(z=>z.includes(YO()))||S.grupos[d][0];
+  const sg2=x=>x>0?'+'+x:(x<0?''+x:'0');
+  const nom2=par=>par.map(j2=>corto(jug(j2).nombre).split(' ')[0]).join(' y ');
+  const sel=particiones(g).map((p2,i)=>
+    `<button class="${(cfg.sel|0)===i?'on':''}" onclick="setParejaSel(${i})">${esc(nom2(p2[0]))} vs ${esc(nom2(p2[1]))}</button>`).join('');
+  const miLado=m.pa.includes(YO())?1:-1;
+  const v=cfg.v|0;
+  const vTxt=v===0?'parejas, sin golpes':(v>0
+    ? esc(nom2(m.pa))+' dan '+v
+    : esc(nom2(m.pb))+' dan '+(-v));
+  let ganA=0,ganB=0;
+  m.apuestas.forEach(a2=>{ if(a2.st>0)ganA++; else if(a2.st<0)ganB++; });
+  const dIda=m.porNueve[0]*VALOR_IDA, dVta=m.porNueve[1]*VALOR_VUELTA;
+  const bono=ganA>ganB?BONO_MAYORIA:(ganB>ganA?-BONO_MAYORIA:0);
+  const dinero=(dIda+dVta+bono)*miLado;
+  const mitad=Math.abs(dinero)/2;
+  const filas=m.apuestas.map(a2=>`<div class="cuenta"><span>${esc(a2.et)}</span>
+    <span class="${a2.st*miLado>0?'arr':(a2.st*miLado<0?'aba':'')}">${sg2(a2.st*miLado)}</span></div>`).join('');
+  return `<div class="grupo" style="margin-top:10px"><h3>Parejas · mejor bola <span>5-5-10 · se divide</span></h3>
+    <div class="segm" style="margin-top:8px;flex-direction:column;align-items:stretch">${sel}</div>
+    <div class="cuenta"><span>Ventaja pactada<br><i style="font-style:normal;font-family:var(--mono);font-size:11px;color:var(--tinta-suave)">${vTxt} · cae por dificultad</i></span>
+      <span style="display:inline-flex;align-items:center;gap:7px">
+        <button class="bt" style="width:30px;height:30px;font-size:19px" onclick="ajustaVentajaParejas(-1)">−</button>
+        <span style="min-width:44px;text-align:center">${sg2(v)}</span>
+        <button class="bt" style="width:30px;height:30px;font-size:19px" onclick="ajustaVentajaParejas(1)">+</button>
+      </span></div>
+    ${filas}
+    <div class="cuenta"><span>Ida ${sg2(m.porNueve[0]*miLado)} × ${VALOR_IDA} · Vuelta ${sg2(m.porNueve[1]*miLado)} × ${VALOR_VUELTA} · Match ${bono===0?'—':sg2(bono*miLado)}</span>
+      <span class="${dinero>0?'arr':(dinero<0?'aba':'')}">${dinero===0?'—':sg2(dinero)}</span></div>
+    <div class="cuenta total"><span>${dinero<0?'Pagan':(dinero>0?'Cobran':'Tablas')} · por cabeza</span>
+      <span>${dinero===0?'—':(mitad%1?mitad.toFixed(1):mitad)}</span></div>
+    <p class="nota-txt" style="margin-top:6px">Mejor bola de cada pareja; presión automática al ir 2 abajo.
+    La pareja y la ventaja se pactan en el tee y viven en este teléfono.</p>
+  </div>`;
+}
+
 
 function resumenRonda(d,jid){
   const c=S.campos[d], ch=hcpCampo(jug(jid),c);
@@ -1337,6 +1435,7 @@ function vistaPresiones(){
         <div class="cuenta total"><span>${q.gran<0?'Vas pagando':(q.gran>0?'Vas cobrando':'Vas a mano')}</span>
           <span>${q.gran===0?'—':Math.abs(q.gran)}</span></div>
         ${riv?`<div class="sl-gt" style="margin-top:10px">Contra cada quien</div>${riv}`:''}</div>`; })()}
+    ${seccionParejas(d)}
     ${seccionSliding()}`;
   ligaScrollPresiones();
 }
