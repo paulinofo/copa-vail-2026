@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 29 ago 2026 · 07:13';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 29 ago 2026 · 07:23';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -505,6 +505,7 @@ function cargar(){
   if(SYNC_URL_EMBEBIDA && !S.sync.url){ S.sync.url=SYNC_URL_EMBEBIDA; S.sync.activo=true; }
   if(!S.grupos) S.grupos=gruposFijando(S.torneo.esquema);
   sembrar();
+  corregirJueves();
   if(S.vista==='sliding') S.vista='presiones';
   if(S.vista==='foto') S.vista='grupos';
   if(S.idxSem!==4){
@@ -2290,6 +2291,33 @@ function sembrar(){
   });
   if(puestos) guardar();
   return puestos;
+}
+
+/* ------------------------------------------------------------
+   CORRECCIÓN DEL JUEVES · las tarjetas de papel del jue 27 son la
+   versión buena, pero los teléfonos que capturaron esa ronda en vivo
+   se quedaron con sus propios números: por celda gana el sello más
+   reciente, y el suyo era más nuevo que el de la semilla. Esto se
+   aplica una sola vez por teléfono, solo al jueves y solo donde el
+   número difiere. Lleva sello fijo, así que una corrección posterior
+   hecha a mano siempre le gana.
+   ------------------------------------------------------------ */
+const CORRECCION_J27 = 3;                          // índice en SEMILLAS
+const CORRECCION_J27_TS = Date.UTC(2026,7,29,13,30);   // sáb 29, 07:30 en Vail
+function corregirJueves(){
+  if(S.corrJ27) return 0;
+  const dec=decodificar(SEMILLAS[CORRECCION_J27]);
+  if(!dec){ S.corrJ27=true; return 0; }
+  let n=0;
+  Object.entries(dec.scores).forEach(([jid,arr])=>{
+    if(!jug(jid)) return;
+    arr.forEach((v,h)=>{
+      if(v===null) return;
+      if(scoreDe(dec.dia,jid,h)!==v){ fijarScore(dec.dia,jid,h,v,CORRECCION_J27_TS); n++; }
+    });
+  });
+  S.corrJ27=true; guardar();
+  return n;
 }
 
 let msgUnir='', errUnir='';
