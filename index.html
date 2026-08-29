@@ -85,6 +85,11 @@ h2.sec:first-child{margin-top:2px}
 .marcador{min-width:58px;height:50px;display:grid;place-items:center;font-family:var(--mono);font-size:28px;font-weight:700}
 .marcador.vacio{color:#B9AF97;font-size:21px}
 .pts{font-family:var(--mono);font-size:13px;font-weight:700;min-width:30px;text-align:right;color:var(--tinta-suave);flex:none}
+.xtras{display:flex;gap:5px;margin-top:3px}
+.xtra{font-family:var(--mono);font-size:11px;letter-spacing:.02em;padding:2px 7px;border-radius:99px;
+  border:1px solid var(--tarjeta-linea);color:var(--tinta-suave);background:transparent}
+.xtra.on{background:var(--laton);border-color:var(--laton);color:var(--verde-hondo);font-weight:700}
+sup.xmk{font-size:8.5px;color:var(--laton);font-weight:700;margin-left:1px}
 
 /* Notación de tarjeta */
 .nota{display:inline-grid;place-items:center;width:34px;height:34px;position:relative}
@@ -403,7 +408,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 28 ago 2026 · 17:16';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 28 ago 2026 · 22:30';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -487,7 +492,7 @@ function cargar(){
   if(!S.sync) S.sync={url:'',token:'',sala:SYNC_SALA,activo:false};
   if(S.sync.token===undefined) S.sync.token='';
   if(SYNC_TOKEN_EMBEBIDO && !S.sync.token) S.sync.token=SYNC_TOKEN_EMBEBIDO;
-  if(!S.pend) S.pend=[]; if(!S.ct) S.ct={};
+  if(!S.pend) S.pend=[]; if(!S.ct) S.ct={}; if(!S.extras) S.extras={};
   if(SYNC_URL_EMBEBIDA && !S.sync.url){ S.sync.url=SYNC_URL_EMBEBIDA; S.sync.activo=true; }
   if(!S.grupos) S.grupos=gruposFijando(S.torneo.esquema);
   sembrar();
@@ -684,6 +689,53 @@ function fijarScore(d,jid,h,v,tRemoto){
 }
 const puntosStableford=(neto,par)=>Math.max(0,2-(neto-par));
 
+/* ---------- Basura: birdies automáticos, sandies y oyeses a mano ----------
+   $1 la unidad; se paga la diferencia contra cada rival del grupo.
+   Viajan como celdas con jid 'jN.x' (los clientes viejos las ignoran). */
+const VALOR_UNIDAD = 1;
+function extraDe(d,jid,h){ return ((S.extras||{})[d+'.'+jid+'.'+h])|0; }   // bits: 1 sandy · 2 oyes
+function fijarExtra(d,jid,h,bits,tRemoto){
+  if(!S.extras) S.extras={};
+  const llave=d+'.'+jid+'.'+h; bits=bits|0;
+  if(bits) S.extras[llave]=bits; else delete S.extras[llave];
+  const ck='x.'+llave;
+  if(tRemoto){ S.ct[ck]=tRemoto; }
+  else{
+    S.ct[ck]=Date.now();
+    if(sincronizando()){
+      S.pend.push({d,jid:jid+'.x',h,v:bits,t:S.ct[ck]});
+      if(S.pend.length>2000) S.pend=S.pend.slice(-1500);
+      programarSync();
+    }
+    artProgramar();
+  }
+  guardar();
+}
+function toggleExtra(jid,bit){
+  fijarExtra(S.diaActivo,jid,S.hoyoActivo,extraDe(S.diaActivo,jid,S.hoyoActivo)^bit);
+  render();
+}
+function unidadesRonda(d,jid){
+  /* blindado: un dato raro degrada a 0 unidades, jamás tumba la vista */
+  try{
+    const c=S.campos[d]; let b=0,s=0,o=0;
+    for(let h=0;h<HOYOS;h++){
+      const g=scoreDe(d,jid,h), x=extraDe(d,jid,h);
+      if(g===null) continue;                    // hoyo sin capturar (o borrado): nada cuenta
+      const df=g-c.par[h];
+      if(df===-1) b+=1; else if(df<=-2) b+=2;
+      if((x&1) && g<=c.par[h]) s++;             // el sandy exige par o mejor
+      if(x&2) o++;
+    }
+    return {b,s,o,total:b+s+o};
+  }catch(e){ return {b:0,s:0,o:0,total:0}; }
+}
+/* dinero del día con basura incluida (el rodado del sliding usa solo el match) */
+function dineroConBasura(d,a,b){
+  const m=dineroMatch(d,a,b); if(m===null) return null;
+  return m + (unidadesRonda(d,a).total-unidadesRonda(d,b).total)*VALOR_UNIDAD;
+}
+
 function resumenRonda(d,jid){
   const c=S.campos[d], ch=hcpCampo(jug(jid),c);
   let bruto=0,neto=0,pts=0,jugados=0;
@@ -741,10 +793,14 @@ function vistaHoy(){
     const g=scoreDe(d,jid,h);
     const neto=g===null?null:g-gp;
     const pts=neto===null?null:puntosStableford(neto,c.par[h]);
+    const x=extraDe(d,jid,h);
+    const chips=(((g!==null&&g<=c.par[h])||(x&1))?`<button class="xtra ${x&1?'on':''}" onclick="toggleExtra('${jid}',1)">🏖️ sandy</button>`:'')
+      +(c.par[h]===3?`<button class="xtra ${x&2?'on':''}" onclick="toggleExtra('${jid}',2)">🎯 oyes</button>`:'');
     html+=`<div class="jug-fila">
       <div class="jug-id">
         <div class="jug-nom">${esc(j.nombre)}${gp>0?' <span style="color:var(--bandera);font-family:var(--mono);font-size:13px">'+'•'.repeat(Math.min(gp,3))+'</span>':''}</div>
         <div class="jug-sub">HCP ${ch}${g!==null?' · neto '+neto:''}</div>
+        ${chips?`<div class="xtras">${chips}</div>`:''}
       </div>
       <div class="golpe">
         <button class="bt" onclick="cambiaGolpe('${jid}',-1)">−</button>
@@ -792,7 +848,8 @@ function vistaHoy(){
   }
   html+=`<div class="barra-prog"><i style="width:${(hechos/(NJUG*HOYOS)*100).toFixed(1)}%"></i></div>
     <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
-    y toca el número para borrar el hoyo.</p>`;
+    y toca el número para borrar el hoyo. La basura a $1: 🏖️ sandy (par desde la arena)
+    y 🎯 oyes (green de un tiro en los pares 3).</p>`;
   if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
 }
@@ -830,12 +887,14 @@ function vistaTarjeta(){
     let f=`<td class="nom">${esc(corto(j.nombre))}<span class="ch" style="visibility:hidden">${ch}</span></td>`;
     let fq=`<td class="nom">${esc(corto(j.nombre))}<span class="ch">${ch}</span></td>`, po=0, pi=0;
     for(let h=0;h<9;h++){ const g=scoreDe(d,jid,h); if(g!==null) so+=g;
-      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}</td>`;
+      const xm=extraDe(d,jid,h);
+      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}${(xm&1)&&g!==null&&g<=c.par[h]?'<sup class="xmk">S</sup>':''}${xm&2?'<sup class="xmk">O</sup>':''}</td>`;
       const q=g===null?null:puntosStableford(g-golpesEnHoyo(ch,c.si[h]),c.par[h]); if(q!==null) po+=q;
       fq+=`<td class="${q===null?'':(q>=3?'bajo':(q===0?'alto':''))}">${q??'·'}</td>`; }
     f+=`<td class="tot">${so||'·'}</td>`; fq+=`<td class="tot">${po||'·'}</td>`;
     for(let h=9;h<18;h++){ const g=scoreDe(d,jid,h); if(g!==null) si_+=g;
-      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}</td>`;
+      const xm=extraDe(d,jid,h);
+      f+=`<td class="${g===null?'':(g<c.par[h]?'bajo':(g>c.par[h]?'alto':''))}">${g??'·'}${(xm&1)&&g!==null&&g<=c.par[h]?'<sup class="xmk">S</sup>':''}${xm&2?'<sup class="xmk">O</sup>':''}</td>`;
       const q=g===null?null:puntosStableford(g-golpesEnHoyo(ch,c.si[h]),c.par[h]); if(q!==null) pi+=q;
       fq+=`<td class="${q===null?'':(q>=3?'bajo':(q===0?'alto':''))}">${q??'·'}</td>`; }
     f+=`<td class="tot">${si_||'·'}</td><td class="tot">${(so+si_)||'·'}</td>`;
@@ -1128,7 +1187,7 @@ function cuentaPresiones(){
     const g=(S.grupos[dd]||[]).find(x=>x.includes(mi));
     let dDia=null;
     if(g) g.filter(id=>id!==mi).forEach(rid=>{
-      const din=dineroMatch(dd,mi,rid);
+      const din=dineroConBasura(dd,mi,rid);
       if(din===null) return;
       porRival[rid]=(porRival[rid]||0)+din; gran+=din; dDia=(dDia||0)+din;
     });
@@ -1209,10 +1268,13 @@ function vistaPresiones(){
   /* ida y vuelta valen lo mismo por presion; el bono del match va para quien junte mas presiones */
   const bono = ganA>ganB ? BONO_MAYORIA : (ganB>ganA ? -BONO_MAYORIA : 0);
   const dinero = dIda + dVta + bono;
+  const uMi=unidadesRonda(d,mi), uRiv=unidadesRonda(d,presRival);
+  const dU=(uMi.total-uRiv.total)*VALOR_UNIDAD;
+  const dineroTotal = dinero + dU;
   const nomR=corto(jug(presRival).nombre);
   const segm=rivales.map(id=>`<button class="${presRival===id?'on':''}" onclick="setRival('${id}')">${esc(corto(jug(id).nombre))}</button>`).join('');
-  const veredicto = dinero===0 ? 'Tablas con '+esc(nomR)
-    : (dinero>0 ? 'Te debe '+dinero+' '+esc(nomR) : 'Le debes '+Math.abs(dinero)+' a '+esc(nomR));
+  const veredicto = dineroTotal===0 ? 'Tablas con '+esc(nomR)
+    : (dineroTotal>0 ? 'Te debe '+dineroTotal+' '+esc(nomR) : 'Le debes '+Math.abs(dineroTotal)+' a '+esc(nomR));
   /* al abrir: tus rivales del día y la ventaja con cada uno; − y + pactan lo del día */
   const resumen=`<div class="grupo"><h3>Hoy juegas con <span>${esc(c.fecha)}</span></h3>
     ${rivales.map(rid=>{ const v=slidingDe(d,mi,rid);
@@ -1244,8 +1306,10 @@ function vistaPresiones(){
         <span>${sg(dVta)}</span></div>
       <div class="cuenta"><span>El match · ${ganA} presi${ganA===1?'ón tuya':'ones tuyas'} contra ${ganB}${bono===0?' · empatados, no se paga':''}</span>
         <span>${bono===0?'—':sg(bono)}</span></div>
-      <div class="cuenta total"><span>${dinero<0?'Pagas':(dinero>0?'Cobras':'Tablas')}</span>
-        <span>${dinero===0?'—':Math.abs(dinero)}</span></div>
+      <div class="cuenta"><span>Basura · llevas ${uMi.total} (${uMi.b}B·${uMi.s}S·${uMi.o}O) contra ${uRiv.total} (${uRiv.b}B·${uRiv.s}S·${uRiv.o}O)</span>
+        <span class="${dU>0?'arr':(dU<0?'aba':'')}">${dU===0?'—':sg(dU)}</span></div>
+      <div class="cuenta total"><span>${dineroTotal<0?'Pagas':(dineroTotal>0?'Cobras':'Tablas')}</span>
+        <span>${dineroTotal===0?'—':Math.abs(dineroTotal)}</span></div>
     </div>
     ${(()=>{ const q=cuentaPresiones();
       /* los 4 campos siempre: los jugados con su dinero y el acumulado,
@@ -1794,7 +1858,15 @@ async function jalar(){
   const datos=await r.json();
   let cambios=0;
   (datos.celdas||[]).forEach(c=>{
-    if(!c||typeof c.t!=='number'||!jug(c.jid)) return;
+    if(!c||typeof c.t!=='number') return;
+    const mx=String(c.jid||'').match(/^(j\d+)\.x$/);
+    if(mx){
+      if(!jug(mx[1])) return;
+      const lx='x.'+c.d+'.'+mx[1]+'.'+c.h;
+      if(!(lx in S.ct)||c.t>S.ct[lx]){ fijarExtra(c.d,mx[1],c.h,c.v|0,c.t); cambios++; }
+      return;
+    }
+    if(!jug(c.jid)) return;
     const llave=c.d+'.'+c.jid+'.'+c.h;
     if(!(llave in S.ct)||c.t>S.ct[llave]){
       fijarScore(c.d,c.jid,c.h,c.v==null?null:c.v,c.t); cambios++;
@@ -1831,6 +1903,10 @@ function volcarTodo(){
     Object.entries(jugs).forEach(([jid,arr])=>(arr||[]).forEach((v,h)=>{
       if(v!==null) S.pend.push({d,jid,h,v,t:S.ct[d+'.'+jid+'.'+h]||Date.now()});
     }));
+  });
+  Object.entries(S.extras||{}).forEach(([llave,bits])=>{
+    const p=llave.split('.');
+    S.pend.push({d:+p[0],jid:p[1]+'.x',h:+p[2],v:bits,t:S.ct['x.'+llave]||Date.now()});
   });
 }
 function setSync(k,v){
@@ -1882,6 +1958,14 @@ function aplicarEstadoPub(pub){
       });
     });
   });
+  Object.entries(pub.extras||{}).forEach(([llave,v])=>{
+    const p=llave.split('.'); if(p.length!==3||!jug(p[1])) return;
+    const ck='x.'+llave, t=(pub.ct||{})[ck]||pub.t||0;
+    if(!(ck in S.ct)||t>S.ct[ck]){
+      if((((S.extras||{})[llave])|0)!==(v|0)){ fijarExtra(+p[0],p[1],+p[2],v|0,t); cambios++; }
+      else if(t>(S.ct[ck]||0)) S.ct[ck]=t;
+    }
+  });
   if(pub.grupos&&pub.tg&&pub.tg>(S.tg||0)){ S.grupos=pub.grupos; S.tg=pub.tg; cambios++; }
   if(pub.jugadores&&pub.tj&&pub.tj>(S.tj||0)){
     pub.jugadores.forEach(pj=>{ const j=jug(pj.id); if(j){ j.nombre=pj.nombre; j.indice=pj.indice; } });
@@ -1908,7 +1992,7 @@ function estadoPubNuevo(){
   return { v:1, t:Date.now(), ct:{...S.ct},
     grupos:S.grupos, tg:S.tg||SEMILLA_TS,
     jugadores:S.jugadores.map(j=>({id:j.id,nombre:j.nombre,indice:j.indice})), tj:S.tj||SEMILLA_TS,
-    scores };
+    extras:{...(S.extras||{})}, scores };
 }
 function artProgramar(ms){
   if(!art||artRO) return;
