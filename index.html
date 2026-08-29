@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 7;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v7 · 29 ago 2026 · 00:12';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v7 · 29 ago 2026 · 00:30';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1187,7 +1187,16 @@ function valorLista(jid){ const i=idxLista(jug(jid).nombre);
 /* Golpes dictados por pareja ('ja|jb' ordenado: los que el primero le da al
    segundo; negativo = los recibe). Le ganan a la diferencia de la lista;
    un pacto del tee les gana a ellos, solo ese día. */
-const SLIDING_PAREJAS = { 'j0|j2':-9 };   /* Alfredo le da 9 a Paulino */
+/* Los pares de Paulino van fijos aquí, no en la lista: su lista está editada
+   solo en su teléfono y los demás calculaban distinto contra él (los que no
+   figuran en LISTA_SLIDING se evaluaban como cero). Con el mapa todos ven lo
+   mismo; un pacto del tee sigue ganando ese día. */
+const SLIDING_PAREJAS = {
+  'j0|j1':12,   /* Paulino le da 12 a Paco   */  'j0|j2':-9,   /* Alfredo le da 9 a Paulino */
+  'j0|j3':0,    /* parejos con Javier        */  'j0|j4':0,    /* parejos con Juan Carlos   */
+  'j0|j5':-2,   /* Ramón le da 2 a Paulino   */  'j0|j6':0,    /* parejos con Vic           */
+  'j0|j7':0     /* parejos con Doc           */
+};
 /* Golpes que 'a' le da a 'b': el pacto de la pareja si existe;
    si no, la diferencia de valores de la lista. */
 function slidingLista(a,b){
