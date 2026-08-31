@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 8;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v8 · 31 ago 2026 · 12:53';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v8 · 31 ago 2026 · 13:12';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -771,8 +771,8 @@ function dineroConBasura(d,a,b){
    OJO, aquí la cuenta es distinta a las presiones individuales: suma la
    DIFERENCIA DE GOLPES entre las dos mejores bolas (si ellos hacen 4 y
    nosotros 6, son 2 puntos de un golpe), y cada apuesta abre su presión
-   al llegar a 2 — que a su vez abre la suya, así que en la práctica sale
-   una presión por cada dos puntos.
+   al llegar a 3 — que a su vez abre la suya, así que en la práctica sale
+   una presión por cada tres puntos.
    La ventaja se pacta POR PAREJA en el tee (v: + = la pareja 1 le da
    a la 2; cae por dificultad) y el dinero del match se DIVIDE entre
    los dos integrantes. Config por teléfono, como los pactos del
@@ -866,7 +866,7 @@ function seccionParejas(d){
     <div class="cuenta total"><span>${dinero<0?'Pagan':(dinero>0?'Cobran':'Tablas')} · por cabeza</span>
       <span>${dinero===0?'—':(mitad%1?mitad.toFixed(1):mitad)}</span></div>
     <p class="nota-txt" style="margin-top:6px">Mejor bola de cada pareja, contando la diferencia de golpes:
-    ganar un hoyo por dos vale dos. Cada apuesta abre presión al llegar a 2.
+    ganar un hoyo por dos vale dos. Cada apuesta abre presión al llegar a 3.
     La pareja y la ventaja se pactan en el tee y viven en este teléfono.</p>
   </div>`;
 }
