@@ -417,7 +417,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 8;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v8 · 31 ago 2026 · 13:12';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v8 · 31 ago 2026 · 19:11';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -767,16 +767,17 @@ function dineroConBasura(d,a,b){
   return m + (unidadesRonda(d,a).total-unidadesRonda(d,b).total)*VALOR_UNIDAD;
 }
 
-/* ---------- Parejas: mejor bola 2v2, fijas los 18, 5-5-10 ----------
-   OJO, aquí la cuenta es distinta a las presiones individuales: suma la
-   DIFERENCIA DE GOLPES entre las dos mejores bolas (si ellos hacen 4 y
-   nosotros 6, son 2 puntos de un golpe), y cada apuesta abre su presión
-   al llegar a 3 — que a su vez abre la suya, así que en la práctica sale
-   una presión por cada tres puntos.
+/* ---------- Parejas: 2v2 por puntos, fijas los 18, 5-5-10 ----------
+   Cada hoyo reparte hasta DOS puntos (regla 31-ago, estilo P&C):
+   uno por la MEJOR BOLA y otro por el TOTAL COMBINADO de la pareja —
+   así la bola del compañero siempre cuenta, aunque el otro haya hecho
+   birdie. Empate en un rubro, punto sin dueño. Cada apuesta abre su
+   presión al llegar a 3, que a su vez abre la suya (cadena).
    La ventaja se pacta POR PAREJA en el tee (v: + = la pareja 1 le da
-   a la 2; cae por dificultad) y el dinero del match se DIVIDE entre
-   los dos integrantes. Config por teléfono, como los pactos del
-   sliding. Solo aparece en grupos de 4. */
+   a la 2; cae por dificultad y descuenta una vez a la mejor bola y una
+   vez al total) y el dinero del match se DIVIDE entre los dos
+   integrantes. Config por teléfono, como los pactos del sliding.
+   Solo aparece en grupos de 4. */
 function cfgParejas(d){
   if(!S.parejas) S.parejas={};
   if(!S.parejas[d]) S.parejas[d]={sel:0,v:0};
@@ -802,13 +803,15 @@ function matchParejas(d,hasta){
     const cfg=cfgParejas(d), c=S.campos[d];
     const par2=particiones(g)[cfg.sel|0]||particiones(g)[0];
     const pa=par2[0], pb=par2[1];
-    const mejor=(par,h)=>{ let m=null;
-      for(const jid of par){ const v2=scoreDe(d,jid,h); if(v2!==null&&(m===null||v2<m)) m=v2; }
-      return m; };
+    const bolas=(par,h)=>par.map(j2=>scoreDe(d,j2,h)).filter(x=>x!==null);
     const v=cfg.v|0;
-    const neto=(par,h)=>{ const m=mejor(par,h); if(m===null) return null;
-      const recibe=(par===pa)?(v<0?-v:0):(v>0?v:0);
-      return m-(recibe?golpesEnHoyo(recibe,c.si[h]):0); };
+    const gr=(par,h)=>{ const recibe=(par===pa)?(v<0?-v:0):(v>0?v:0);
+      return recibe?golpesEnHoyo(recibe,c.si[h]):0; };
+    const neto=(par,h)=>{ const b=bolas(par,h); if(!b.length) return null;
+      return Math.min(...b)-gr(par,h); };
+    /* total combinado: solo cuenta con las dos bolas capturadas */
+    const total=(par,h)=>{ const b=bolas(par,h); if(b.length!==2) return null;
+      return b[0]+b[1]-gr(par,h); };
     const apuestas=[]; const porNueve=[];
     [[0,8,'Ida'],[9,17,'Vuelta']].forEach(([ini,fin,nom])=>{
       let aps=[{et:nom+' · salida',ini,fin,st:0,p:false}];
@@ -817,7 +820,9 @@ function matchParejas(d,hasta){
       for(let h=ini;h<=Math.min(fin,hasta);h++){
         const na=neto(pa,h), nb=neto(pb,h);
         if(na===null||nb===null) continue;
-        const r=nb-na;                      // puntos: la diferencia de golpes
+        let r=nb>na?1:(nb<na?-1:0);         // punto de la mejor bola
+        const ta=total(pa,h), tb=total(pb,h);
+        if(ta!==null&&tb!==null) r+=tb>ta?1:(tb<ta?-1:0);   // punto del total combinado
         aps.forEach(ap=>{ if(h>=ap.ini) ap.st+=r; });
         const nuevas=[];
         aps.forEach(ap=>{ if(!ap.p&&Math.abs(ap.st)>=3&&h>=ap.ini&&h<fin){
@@ -852,7 +857,7 @@ function seccionParejas(d){
   const mitad=Math.abs(dinero)/2;
   const filas=m.apuestas.map(a2=>`<div class="cuenta"><span>${esc(a2.et)}</span>
     <span class="${a2.st*miLado>0?'arr':(a2.st*miLado<0?'aba':'')}">${sg2(a2.st*miLado)}</span></div>`).join('');
-  return `<div class="grupo" style="margin-top:10px"><h3>Parejas · mejor bola <span>5-5-10 · se divide</span></h3>
+  return `<div class="grupo" style="margin-top:10px"><h3>Parejas · bola y total <span>5-5-10 · se divide</span></h3>
     <div class="segm" style="margin-top:8px;flex-direction:column;align-items:stretch">${sel}</div>
     <div class="cuenta"><span>Ventaja pactada<br><i style="font-style:normal;font-family:var(--mono);font-size:11px;color:var(--tinta-suave)">${vTxt} · cae por dificultad</i></span>
       <span style="display:inline-flex;align-items:center;gap:7px">
@@ -865,9 +870,9 @@ function seccionParejas(d){
       <span class="${dinero>0?'arr':(dinero<0?'aba':'')}">${dinero===0?'—':sg2(dinero)}</span></div>
     <div class="cuenta total"><span>${dinero<0?'Pagan':(dinero>0?'Cobran':'Tablas')} · por cabeza</span>
       <span>${dinero===0?'—':(mitad%1?mitad.toFixed(1):mitad)}</span></div>
-    <p class="nota-txt" style="margin-top:6px">Mejor bola de cada pareja, contando la diferencia de golpes:
-    ganar un hoyo por dos vale dos. Cada apuesta abre presión al llegar a 3.
-    La pareja y la ventaja se pactan en el tee y viven en este teléfono.</p>
+    <p class="nota-txt" style="margin-top:6px">Cada hoyo vale hasta dos puntos: uno por la mejor bola y otro
+    por el total combinado de la pareja — la bola del compañero siempre cuenta. Cada apuesta abre presión
+    al llegar a 3. La pareja y la ventaja se pactan en el tee y viven en este teléfono.</p>
   </div>`;
 }
 
@@ -978,7 +983,7 @@ function vistaHoy(){
       const marcP=vivas.length
         ? vivas.map(a2=>`<i class="${a2.st*lado>0?'arr':(a2.st*lado<0?'aba':'')}">${sg(a2.st*lado)}</i>`).join('')
         : '<i>—</i>';
-      bloqueParejas=`<div class="grupo ph"><h3>Parejas <span>mejor bola, en ${etNueve}</span></h3>
+      bloqueParejas=`<div class="grupo ph"><h3>Parejas <span>bola y total, en ${etNueve}</span></h3>
         <div class="ph-fila"><span class="ph-nom">${esc(nom2(mios))} vs ${esc(nom2(suyos))}</span>
           <span class="ph-m">${marcP}</span></div></div>`;
     }
