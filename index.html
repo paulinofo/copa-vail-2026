@@ -331,6 +331,12 @@ table.card.sl-tabla input.aba{color:var(--bandera);border-color:var(--bandera)}
   background:var(--tarjeta-linea);color:var(--tinta-suave)}
 .ph-m i.arr{background:var(--ok);color:#fff}
 .ph-m i.aba{background:var(--bandera);color:#fff}
+/* la vuelta va delineada, para distinguirla de la ida a golpe de vista */
+.ph-sep{width:1.5px;align-self:stretch;min-height:18px;background:var(--tinta-suave);opacity:.45;
+  margin:0 4px;flex:none;border-radius:1px}
+.ph-m.vta i{background:transparent;border:1.5px solid var(--tarjeta-linea);color:var(--tinta-suave);padding:0 2px}
+.ph-m.vta i.arr{background:transparent;border-color:var(--ok);color:var(--ok)}
+.ph-m.vta i.aba{background:transparent;border-color:var(--bandera);color:var(--bandera)}
 .ph-d{font-family:var(--mono);font-size:15px;font-weight:700;min-width:44px;text-align:right;color:var(--tinta-suave)}
 .ph-d.arr{color:var(--ok)} .ph-d.aba{color:var(--bandera)}
 .ph-fila.total{border-top:1.5px solid var(--tinta);margin-top:3px;padding-top:6px}
@@ -417,7 +423,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 8;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v8 · 31 ago 2026 · 20:26';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v8 · 31 ago 2026 · 20:47';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -1380,7 +1386,8 @@ function seccionFoursome(d,mi){
       return `<div class="ph-fila" style="flex-wrap:wrap">
         <span class="ph-nom">${esc(corto(jug(rid).nombre))}</span>
         <span class="ph-m">${vivo?marc(m.apuestas.filter(a=>a.fin===8)):'<i>—</i>'}</span>
-        <span class="ph-m" style="opacity:.75">${vivo?marc(m.apuestas.filter(a=>a.fin===17)):''}</span>
+        <span class="ph-sep"></span>
+        <span class="ph-m vta">${vivo?marc(m.apuestas.filter(a=>a.fin===17)):''}</span>
         <span class="ph-d ${din>0?'arr':(din<0?'aba':'')}">${din===null?'—':sg(din)}</span></div>`;
     }).join('');
     return `<div class="grupo ph" style="margin-top:10px">
