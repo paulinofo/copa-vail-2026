@@ -423,7 +423,7 @@ try{
    ============================================================ */
 const DIAS = 4, HOYOS = 18, NJUG = 8;
 const VERSION = 8;   // sube al cambiar datos base: dispara migrar()
-const ACTUALIZADA='v8 · 31 ago 2026 · 20:55';   // lo sella el script de despliegue en cada publicación
+const ACTUALIZADA='v8 · 31 ago 2026 · 21:36';   // lo sella el script de despliegue en cada publicación
 
 /* --- Los 8 jugadores --- */
 /* Índices de handicap del torneo (ajuste vs promedio del grupo tras 2 rondas,
@@ -444,6 +444,12 @@ const JUGADORES = [
    Juan Carlos (j4) · Alfredo (j2) · Vic (j6) · Paulino (j0)
    Paulino va siempre al final de cualquier lista.                    */
 const PRIMER_GRUPO = ['j4','j3','j6','j0'];
+
+/* Cerrado un día de juego (pasada su fecha), sus scores quedan de solo
+   consulta: únicamente este teléfono captura correcciones. El candado
+   frena la CAPTURA local — la sincronización siempre fusiona, para que
+   esas correcciones bajen a todos los teléfonos. */
+const EDITOR_CIERRE = 'j0';
 
 /* --- Los 4 campos ---
    Los cuatro con par y SI de tarjeta real; EagleVail verificado el
@@ -610,6 +616,10 @@ const parTotal = c => c.par.reduce((a,b)=>a+b,0);
    presiones en él. Se elige la primera vez y se cambia en Ajustes; vive solo
    en el teléfono (no viaja en la sincronización). */
 const YO=()=>S.yo||'j0';
+const hoyISO=()=>{ const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const diaCerrado=d=>{ const c=S.campos[d]; return !!(c&&c.iso&&c.iso<hoyISO()); };
+const puedeEditar=d=>!diaCerrado(d)||YO()===EDITOR_CIERRE;
 function setYo(id){
   if(!jug(id)) return;
   S.yo=id; guardar();
@@ -733,6 +743,7 @@ function fijarExtra(d,jid,h,bits,tRemoto){
 }
 function toggleExtra(jid,bit){
   const d=S.diaActivo, h=S.hoyoActivo;
+  if(!puedeEditar(d)) return;
   fijarExtra(d,jid,h,extraDe(d,jid,h)^bit);
   render();
 }
@@ -741,6 +752,7 @@ function toggleExtra(jid,bit){
    La unidad se la lleva el 1º; el otro foursome lleva su propia fila. */
 function cicloOyes(jid){
   const d=S.diaActivo, h=S.hoyoActivo;
+  if(!puedeEditar(d)) return;
   const g=(S.grupos[d]||[]).find(z=>z.includes(jid))||[jid];
   let fila=g.filter(o=>ordenOyes(d,o,h)>0).sort((a,b)=>ordenOyes(d,a,h)-ordenOyes(d,b,h));
   if(ordenOyes(d,jid,h)>0) fila=fila.filter(o=>o!==jid);
@@ -918,6 +930,7 @@ function claseNota(g,par){
 function vistaHoy(){
   const d=S.diaActivo, c=S.campos[d], h=S.hoyoActivo;
   const grupo=S.grupos[d][S.grupoActivo];
+  const editable=puedeEditar(d);
   let hechos=0;
   S.grupos[d].forEach(g=>g.forEach(jid=>{ for(let i=0;i<HOYOS;i++) if(scoreDe(d,jid,i)!==null) hechos++; }));
 
@@ -943,9 +956,9 @@ function vistaHoy(){
     const x=extraDe(d,jid,h);
     /* los chips se dibujan siempre: el renglón mide igual con y sin unidades */
     const sandyOk=(g!==null&&g<=c.par[h])||(x&1);
-    const chips=`<button class="xtra ${x&1?'on':''}"${sandyOk?'':' disabled'} onclick="toggleExtra('${jid}',1)">🏖️ sandy</button>`
+    const chips=`<button class="xtra ${x&1?'on':''}"${sandyOk&&editable?'':' disabled'} onclick="toggleExtra('${jid}',1)">🏖️ sandy</button>`
       +(c.par[h]===3?(()=>{ const pos=ordenOyes(d,jid,h);
-          return `<button class="xtra ${pos===1?'on':''}" onclick="cicloOyes('${jid}')">🎯 ${pos?pos+'º':'oyes'}</button>`; })():'');
+          return `<button class="xtra ${pos===1?'on':''}"${editable?'':' disabled'} onclick="cicloOyes('${jid}')">🎯 ${pos?pos+'º':'oyes'}</button>`; })():'');
     html+=`<div class="jug-fila">
       <div class="jug-id">
         <div class="jug-nom">${esc(j.nombre)}${gp>0?' <span style="color:var(--bandera);font-family:var(--mono);font-size:13px">'+'•'.repeat(Math.min(gp,3))+'</span>':''}</div>
@@ -953,11 +966,11 @@ function vistaHoy(){
         <div class="xtras">${chips}</div>
       </div>
       <div class="golpe">
-        <button class="bt" onclick="cambiaGolpe('${jid}',-1)">−</button>
-        <div class="marcador ${g===null?'vacio':''}" onclick="ponPar('${jid}')">
+        ${editable?`<button class="bt" onclick="cambiaGolpe('${jid}',-1)">−</button>`:''}
+        <div class="marcador ${g===null?'vacio':''}"${editable?` onclick="ponPar('${jid}')"`:''}>
           ${g===null?'–':`<span class="nota ${claseNota(g,c.par[h])}">${g}</span>`}
         </div>
-        <button class="bt" onclick="cambiaGolpe('${jid}',1)">+</button>
+        ${editable?`<button class="bt" onclick="cambiaGolpe('${jid}',1)">+</button>`:''}
       </div>
       <div class="pts">${pts===null?'':(esStableford()?pts+'p':(neto-c.par[h]>0?'+':'')+(neto-c.par[h]))}</div>
     </div>`;
@@ -997,15 +1010,18 @@ function vistaHoy(){
       ${filasPH}</div>${bloqueParejas}`;
   }
   html+=`<div class="barra-prog"><i style="width:${(hechos/(NJUG*HOYOS)*100).toFixed(1)}%"></i></div>
-    <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. Toca el guion para anotar el par, ajusta con − y +,
+    <p class="nota-txt">${hechos} de ${NJUG*HOYOS} golpes capturados. ${editable
+      ?`Toca el guion para anotar el par, ajusta con − y +,
     y toca el número para borrar el hoyo. La basura a $1: 🏖️ sandy (par desde la arena)
-    y 🎯 oyes (en los pares 3, toca en orden de cercanía al hoyo: cobra el 1º).</p>`;
+    y 🎯 oyes (en los pares 3, toca en orden de cercanía al hoyo: cobra el 1º).`
+      :`Día jugado y cerrado: solo consulta. Cualquier corrección la captura ${esc(corto(jug(EDITOR_CIERRE).nombre))} en su teléfono y les baja a todos por la sincronización.`}</p>`;
   if(art&&artRO) html+=`<p class="nota-txt">Estás viendo el torneo en vivo. Lo que captures aquí se queda solo en este teléfono.</p>`;
   $('v-hoy').innerHTML=html;
 }
 function setGrupo(i){ S.grupoActivo=i; borrador=null; guardar(); render(); }
 function mueveHoyo(n){ S.hoyoActivo=Math.max(0,Math.min(HOYOS-1,S.hoyoActivo+n)); guardar(); render(); }
 function ponPar(jid){ const d=S.diaActivo,h=S.hoyoActivo;
+  if(!puedeEditar(d)) return;
   const g=scoreDe(d,jid,h);
   if(g===null) fijarScore(d,jid,h,S.campos[d].par[h]);   // toque en el guion: anota el par
   else fijarScore(d,jid,h,null);                          // toque en el número: lo borra
@@ -1013,6 +1029,7 @@ function ponPar(jid){ const d=S.diaActivo,h=S.hoyoActivo;
 }
 function cambiaGolpe(jid,n){
   const d=S.diaActivo,h=S.hoyoActivo,a=scoreDe(d,jid,h);
+  if(!puedeEditar(d)) return;
   if(a===null) fijarScore(d,jid,h,S.campos[d].par[h]);
   else fijarScore(d,jid,h,(a+n)<1?null:Math.min(15,a+n));
   render();
